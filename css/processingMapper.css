@@ -1,0 +1,447 @@
+html {
+	position:static;
+	background:rgb(220,220,220);
+}
+body {
+	position:static;
+	background:rgb(105,0,0);
+}
+canvas {
+	position:absolute;
+}
+p {
+	font-size:16px;
+	font-family:monospace;
+}
+span {
+	padding:2px;
+}
+
+
+
+.graphColor {
+	background:rgb(207,207,207);
+}
+.listColor {
+	background:rgb(80,80,80);
+}
+.rawColor {
+	background:rgb(220,220,220);
+}
+.grey {
+	background:rgba(180,180,180,255);
+}
+.blue {
+	background:rgba(100,160,255,255);
+}
+.green {
+	background:rgba(0,255,0,255);
+}
+.yellow {
+	background:rgba(255,255,0,255);
+}
+.red {
+	background:rgba(200,0,0,255);
+}
+.inactive {
+	background:black;
+	color:white;
+}
+.active {
+	background:white;
+	color:black;
+}
+
+.aboutClosed {
+	left:1200px;
+	width:60px;
+	height:40px;
+	padding:10px;
+	background:rgb(30,30,255);
+	color:white;
+}
+.aboutOpen {
+	left:860px;
+	width:400px;
+	height:400px;
+	padding:10px;
+	font-size:10px;
+	background:gray;	
+	color:black;
+}
+#aboutAlterText {
+	font-size:20px;
+}
+#aboutText {
+	left:860px;
+	width:400px;
+	height:400px;
+	display:none;
+}
+#aboutSwitch {
+	z-index:4;
+	position:absolute;
+	font-size:20px;
+	font-family:monospace;
+}
+
+
+
+.helpClosed {
+	top:60px;
+	left:1200px;
+	width:60px;
+	height:40px;
+	padding:10px;
+	background:rgb(255,30,30);
+	color:white;
+}
+.helpOpen {
+	top:0px;
+	left:860px;
+	width:400px;
+	height:400px;
+	padding:10px;
+	font-size:10px;
+	background:gray;	
+	color:black;
+}
+#helpAlterText{
+	font-size:20px;
+}
+#helpText {
+	left:860px;
+	width:400px;
+	height:400px;
+	display:none;
+}
+#helpSwitch {
+	z-index:4;
+	position:absolute;
+	font-size:20px;
+	font-family:monospace;
+}
+.hoverHelp {
+	background:white;
+	color:black;
+}
+.normalHelp {
+	background:black;
+	color:white;
+}
+
+
+.topicHelp {
+	top:0px;
+	left:760px;
+	width:500px;
+	height:400px;
+	padding:10px;
+	font-size:10px;
+	background:gray;	
+	color:black;
+}
+.bigTopicHelp {
+	top:0px;
+	left:460px;
+	width:800px;
+	height:500px;
+	padding:10px;
+	font-size:10px;
+	background:gray;	
+	color:black;
+}
+#viewHelp {
+	z-index:4;
+	position:absolute;
+	font-size:20px;
+	font-family:monospace;
+	display:none;
+}
+#signalHelp {
+	z-index:4;
+	position:absolute;
+	font-size:20px;
+	font-family:monospace;
+	display:none;
+}
+#mappingHelp {
+	z-index:4;
+	position:absolute;
+	font-size:20px;
+	font-family:monospace;
+	display:none;
+}
+#filteringHelp {
+	z-index:4;
+	position:absolute;
+	font-size:20px;
+	font-family:monospace;
+	display:none;
+}
+#taggingHelp {
+	z-index:4;
+	position:absolute;
+	font-size:20px;
+	font-family:monospace;
+	display:none;
+}
+
+
+#rawTab {
+	z-index:3;
+	position:absolute;
+	left:240px;
+	width:100px;
+	height:40px;
+	padding:10px;
+	font-size:20px;
+	font-family:monospace;
+}
+#graphTab {
+	z-index:3;
+	position:absolute;
+	left:0px;
+	width:100px;
+	height:40px;
+	padding:10px;
+	font-size:20px;
+	font-family:monospace;
+}
+#listTab {
+	z-index:3;
+	position:absolute;
+	left:120px;
+	width:100px;
+	height:40px;
+	padding:10px;
+	font-size:20px;
+	font-family:monospace;
+}
+#signalsTab {
+	z-index:3;
+	position:absolute;
+	top:64px;
+	left:880px;
+	width:120px;
+	height:20px;
+	padding:6px;
+	font-size:20px;
+	font-family:monospace;
+	display:none;
+}
+#mappingsTab {
+	z-index:3;
+	position:absolute;
+	top:64px;
+	left:1000px;
+	width:120px;
+	height:20px;
+	padding:6px;
+	font-size:20px;
+	font-family:monospace;
+	display:none;
+}
+#executeText {
+	z-index:1;
+	color:rgba(0,0,0,0);
+	position:absolute;
+	left:280px;
+	top:11px;
+	height:30px;
+	width:780px;
+	font-size:20px;
+	font-family:monospace;
+	background:white;
+	border:0px;
+	padding:0px;
+	padding-top:8px;
+	padding-left:2px;
+	display:none;
+}
+#executeInput {
+	z-index:2;
+	color:rgba(0,0,0,255);
+	position:absolute;
+	left:280px;
+	top:14px;
+	height:30px;
+	width:780px;
+	font-size:20px;
+	font-family:monospace;
+	background:transparent;
+	border:0px;
+	display:none;
+}
+#executeButton {
+	z-index:3;
+	position:absolute;
+	top:10px;
+	left:1080px;
+	width:100px;
+	height:40px;
+	font-size:20px;
+	font-family:monospace;
+	display:none;
+}
+/*
+.view {
+	width:900px;
+}
+.modify {
+	width:780px;
+}
+*/
+#filterText {
+	z-index:1;
+	color:rgba(0,0,0,0);
+	position:absolute;
+	left:530px;
+	top:11px;
+	height:30px;
+	width:650px;
+	font-size:20px;
+	font-family:monospace;
+	background:white;
+	border:0px;
+	padding:0px;
+	padding-top:8px;
+	padding-left:2px;
+}
+#filterInput {
+	z-index:2;
+	color:rgba(0,0,0,255);
+	position:absolute;
+	left:530px;
+	top:14px;
+	height:30px;
+	width:650px;
+	font-size:20px;
+	font-family:monospace;
+	background:transparent;
+	border:0px;
+}
+#filterInputLabel {
+	z-index:2;
+	position:absolute;
+	left:375px;
+	top:22px;
+	font-size:18px;
+}
+
+
+#addMappingForm {
+	background:white;
+	position:absolute;
+	width:600px;
+	height:200px;
+	top:300px;
+	left:340px;
+	padding:10px;
+	display:none;
+}
+#mappingFactorInput {
+	position:absolute;
+	top:135px;
+	left:198px;
+}
+#mappingOffsetInput {
+	position:absolute;
+	top:135px;
+	left:370px;
+}
+#mappingTemplate {
+	font-size:16px;
+	font-family:monospace;
+}
+#okMapping {
+	position:absolute;
+	text-align:center;
+	padding-top:10px;
+	height:25px;
+	width:100px;
+	left:20px;
+	bottom:10px;
+	background:black;
+	color:white;
+}
+#cancelMapping {
+	position:absolute;
+	text-align:center;
+	padding-top:10px;
+	height:25px;
+	width:100px;
+	right:20px;
+	bottom:10px;
+	background:red;
+	color:white;
+}
+
+
+
+#removeConnectionForm {
+	background:white;
+	position:absolute;
+	width:600px;
+	height:200px;
+	top:300px;
+	left:340px;
+	padding:10px;
+	display:none;
+}
+#okRemoveConnection {
+	position:absolute;
+	text-align:center;
+	padding-top:10px;
+	height:25px;
+	width:100px;
+	left:20px;
+	bottom:10px;
+	background:black;
+	color:white;
+}
+#cancelRemoveConnection {
+	position:absolute;
+	text-align:center;
+	padding-top:10px;
+	height:25px;
+	width:100px;
+	right:20px;
+	bottom:10px;
+	background:red;
+	color:white;
+}
+
+
+
+#signalsFile {
+	position:absolute;
+	padding:10px;
+	left:0px;
+	top:65px;
+	background:transparent;
+	color:black;
+	display:none;
+}
+#mappingsFile {
+	position:absolute;
+	padding:10px;
+	left:0px;
+	top:65px;
+	background:transparent;
+	color:black;
+	display:none;
+}
+#rawText {
+	position:absolute;
+	padding:10px;
+	left:0px;
+	top:100px;
+	background:transparent;
+	color:black;
+	display:none;
+}
+#globalCanvas{
+	left:0px;
+	top:0px;
+}

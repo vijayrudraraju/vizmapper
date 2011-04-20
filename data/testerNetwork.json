@@ -1,0 +1,491 @@
+[
+{
+	"device" : {
+		"name" : "prettyScreen",
+			"numInputs" : 12,
+			"numOutputs" : 14,
+			"inputs" : [
+			{
+				"name" : "/monitor/sector1/r",
+				"type" : "i",
+				"units" : "na",
+				"minimum" : 0,
+				"maximum" : 255
+			},
+			{
+				"name" : "/monitor/sector1/g",
+				"type" : "i",
+				"units" : "na",
+				"minimum" : 0,
+				"maximum" : 255
+			},
+			{
+				"name" : "/monitor/sector1/b",
+				"type" : "i",
+				"units" : "na",
+				"minimum" : 0,
+				"maximum" : 255
+			},
+			{
+				"name" : "/monitor/sector2/r",
+				"type" : "i",
+				"units" : "na",
+				"minimum" : 0,
+				"maximum" : 255
+			},
+			{
+				"name" : "/monitor/sector2/g",
+				"type" : "i",
+				"units" : "na",
+				"minimum" : 0,
+				"maximum" : 255
+			},
+			{
+				"name" : "/monitor/sector2/b",
+				"type" : "i",
+				"units" : "na",
+				"minimum" : 0,
+				"maximum" : 255
+			},
+			{
+				"name" : "/monitor/sector3/r",
+				"type" : "i",
+				"units" : "na",
+				"minimum" : 0,
+				"maximum" : 255
+			},
+			{
+				"name" : "/monitor/sector3/g",
+				"type" : "i",
+				"units" : "na",
+				"minimum" : 0,
+				"maximum" : 255
+			},
+			{
+				"name" : "/monitor/sector3/b",
+				"type" : "i",
+				"units" : "na",
+				"minimum" : 0,
+				"maximum" : 255
+			},
+			{
+				"name" : "/monitor/sector4/r",
+				"type" : "i",
+				"units" : "na",
+				"minimum" : 0,
+				"maximum" : 255
+			},
+			{
+				"name" : "/monitor/sector4/g",
+				"type" : "i",
+				"units" : "na",
+				"minimum" : 0,
+				"maximum" : 255
+			},
+			{
+				"name" : "/monitor/sector4/b",
+				"type" : "i",
+				"units" : "na",
+				"minimum" : 0,
+				"maximum" : 255
+			},
+			{
+				"name" : "/monitor/sector5/r",
+				"type" : "i",
+				"units" : "na",
+				"minimum" : 0,
+				"maximum" : 255
+			},
+			{
+				"name" : "/monitor/sector5/g",
+				"type" : "i",
+				"units" : "na",
+				"minimum" : 0,
+				"maximum" : 255
+			},
+			{
+				"name" : "/monitor/sector5/b",
+				"type" : "i",
+				"units" : "na",
+				"minimum" : 0,
+				"maximum" : 255
+			},
+			{
+				"name" : "/monitor/sector6/r",
+				"type" : "i",
+				"units" : "na",
+				"minimum" : 0,
+				"maximum" : 255
+			},
+			{
+				"name" : "/monitor/sector6/g",
+				"type" : "i",
+				"units" : "na",
+				"minimum" : 0,
+				"maximum" : 255
+			},
+			{
+				"name" : "/monitor/sector6/b",
+				"type" : "i",
+				"units" : "na",
+				"minimum" : 0,
+				"maximum" : 255
+			},
+			{
+				"name" : "/monitor/sector7/r",
+				"type" : "i",
+				"units" : "na",
+				"minimum" : 0,
+				"maximum" : 255
+			},
+			{
+				"name" : "/monitor/sector7/g",
+				"type" : "i",
+				"units" : "na",
+				"minimum" : 0,
+				"maximum" : 255
+			},
+			{
+				"name" : "/monitor/sector7/b",
+				"type" : "i",
+				"units" : "na",
+				"minimum" : 0,
+				"maximum" : 255
+			},
+			{
+				"name" : "/monitor/sector8/r",
+				"type" : "i",
+				"units" : "na",
+				"minimum" : 0,
+				"maximum" : 255
+			},
+			{
+				"name" : "/monitor/sector8/g",
+				"type" : "i",
+				"units" : "na",
+				"minimum" : 0,
+				"maximum" : 255
+			},
+			{
+				"name" : "/monitor/sector8/b",
+				"type" : "i",
+				"units" : "na",
+				"minimum" : 0,
+				"maximum" : 255
+			}
+		],
+			"outputs" : [
+			{
+				"name" : "/eye1/blob1/x",
+				"type" : "f",
+				"units" : null,
+				"minimum" : 0,
+				"maximum" : 1
+			},
+			{
+				"name" : "/eye1/blob1/y",
+				"type" : "f",
+				"units" : null,
+				"minimum" : 0,
+				"maximum" : 1
+			},
+			{
+				"name" : "/eye1/blob2/x",
+				"type" : "f",
+				"units" : null,
+				"minimum" : 0,
+				"maximum" : 1
+			},
+			{
+				"name" : "/eye1/blob2/y",
+				"type" : "f",
+				"units" : null,
+				"minimum" : 0,
+				"maximum" : 1
+			},
+			{
+				"name" : "/eye2/blob1/x",
+				"type" : "f",
+				"units" : null,
+				"minimum" : 0,
+				"maximum" : 1
+			},
+			{
+				"name" : "/eye2/blob1/y",
+				"type" : "f",
+				"units" : null,
+				"minimum" : 0,
+				"maximum" : 1
+			},
+			{
+				"name" : "/eye2/blob2/x",
+				"type" : "f",
+				"units" : null,
+				"minimum" : 0,
+				"maximum" : 1
+			},
+			{
+				"name" : "/eye2/blob2/y",
+				"type" : "f",
+				"units" : null,
+				"minimum" : 0,
+				"maximum" : 1
+			},
+			{
+				"name" : "/ear1/lowrange/amplitude",
+				"type" : "f",
+				"units" : null,
+				"minimum" : 0,
+				"maximum" : 1
+			},
+			{
+				"name" : "/ear1/midrange/amplitude",
+				"type" : "f",
+				"units" : null,
+				"minimum" : 0,
+				"maximum" : 1
+			},
+			{
+				"name" : "/ear1/highrange/amplitude",
+				"type" : "f",
+				"units" : null,
+				"minimum" : 0,
+				"maximum" : 1
+			},
+			{
+				"name" : "/ear2/lowrange/amplitude",
+				"type" : "f",
+				"units" : null,
+				"minimum" : 0,
+				"maximum" : 1
+			},
+			{
+				"name" : "/ear2/midrange/amplitude",
+				"type" : "f",
+				"units" : null,
+				"minimum" : 0,
+				"maximum" : 1
+			},
+			{
+				"name" : "/ear2/highrange/amplitude",
+				"type" : "f",
+				"units" : null,
+				"minimum" : 0,
+				"maximum" : 1
+			}
+		]
+	}
+}
+,
+{
+	"device" : {
+		"name" : "clamps",
+		"numInputs" : 10,
+		"numOutputs" : 0,
+		"inputs" : [
+		{
+			"name" : "/body/hand/left/finger/thumb/state",
+			"type" : "i",
+			"units" : "na",
+			"minimum" : 0,
+			"maximum" : 10
+		},
+		{
+			"name" : "/body/hand/left/finger/index/state",
+			"type" : "i",
+			"units" : "na",
+			"minimum" : 0,
+			"maximum" : 10
+		},
+		{
+			"name" : "/body/hand/left/finger/middle/state",
+			"type" : "i",
+			"units" : "na",
+			"minimum" : 0,
+			"maximum" : 10
+		},
+		{
+			"name" : "/body/hand/left/finger/ring/state",
+			"type" : "i",
+			"units" : "na",
+			"minimum" : 0,
+			"maximum" : 10
+		},
+		{
+			"name" : "/body/hand/left/finger/pinky/state",
+			"type" : "i",
+			"units" : "na",
+			"minimum" : 0,
+			"maximum" : 10
+		},
+		{
+			"name" : "/body/hand/right/finger/thumb/state",
+			"type" : "i",
+			"units" : "na",
+			"minimum" : 0,
+			"maximum" : 10
+		},
+		{
+			"name" : "/body/hand/right/finger/index/state",
+			"type" : "i",
+			"units" : "na",
+			"minimum" : 0,
+			"maximum" : 10
+		},
+		{
+			"name" : "/body/hand/right/finger/middle/state",
+			"type" : "i",
+			"units" : "na",
+			"minimum" : 0,
+			"maximum" : 10
+		},
+		{
+			"name" : "/body/hand/right/finger/ring/state",
+			"type" : "i",
+			"units" : "na",
+			"minimum" : 0,
+			"maximum" : 10
+		},
+		{
+			"name" : "/body/hand/right/finger/pinky/state",
+			"type" : "i",
+			"units" : "na",
+			"minimum" : 0,
+			"maximum" : 10
+		}
+		],
+			"outputs": []
+	}
+}
+,
+{
+	"device" : {
+		"name" : "sensorFloor",
+		"numInputs" : 5,
+		"numOutputs" : 6,
+		"inputs" : [
+		{
+			"name" : "/synthesizer/timbre",
+			"type" : "f",
+			"units" : "na",
+			"minimum" : 0,
+			"maximum" : 1
+		},
+		{
+			"name" : "/synthesizer/amplitude",
+			"type" : "f",
+			"units" : "na",
+			"minimum" : 0,
+			"maximum" : 1
+		},
+		{
+			"name" : "/synthesizer/frequency",
+			"type" : "f",
+			"units" : "na",
+			"minimum" : 0,
+			"maximum" : 1
+		},
+		{
+			"name" : "/synthesizer/trigger",
+			"type" : "i",
+			"units" : "na",
+			"minimum" : 0,
+			"maximum" : 1
+		},
+		{
+			"name" : "/synthesizer/duration",
+			"type" : "f",
+			"units" : "na",
+			"minimum" : 0,
+			"maximum" : 1
+		}
+		],
+			"outputs" : [
+			{
+				"name" : "/touchfloor1/pressure",
+				"type" : "f",
+				"units" : "na",
+				"minimum" : 0,
+				"maximum" : 1
+			},
+			{
+				"name" : "/touchfloor1/x",
+				"type" : "f",
+				"units" : "na",
+				"minimum" : 0,
+				"maximum" : 1
+			},
+			{
+				"name" : "/touchfloor1/y",
+				"type" : "f",
+				"units" : "na",
+				"minimum" : 0,
+				"maximum" : 1
+			},
+			{
+				"name" : "/touchfloor2/pressure",
+				"type" : "f",
+				"units" : "na",
+				"minimum" : 0,
+				"maximum" : 1
+			},
+			{
+				"name" : "/touchfloor2/x",
+				"type" : "f",
+				"units" : "na",
+				"minimum" : 0,
+				"maximum" : 1
+			},
+			{
+				"name" : "/touchfloor2/y",
+				"type" : "f",
+				"units" : "na",
+				"minimum" : 0,
+				"maximum" : 1
+			},
+			{
+				"name" : "/touchfloor3/pressure",
+				"type" : "f",
+				"units" : "na",
+				"minimum" : 0,
+				"maximum" : 1
+			},
+			{
+				"name" : "/touchfloor3/x",
+				"type" : "f",
+				"units" : "na",
+				"minimum" : 0,
+				"maximum" : 1
+			},
+			{
+				"name" : "/touchfloor3/y",
+				"type" : "f",
+				"units" : "na",
+				"minimum" : 0,
+				"maximum" : 1
+			},
+			{
+				"name" : "/touchfloor4/pressure",
+				"type" : "f",
+				"units" : "na",
+				"minimum" : 0,
+				"maximum" : 1
+			},
+			{
+				"name" : "/touchfloor4/x",
+				"type" : "f",
+				"units" : "na",
+				"minimum" : 0,
+				"maximum" : 1
+			},
+			{
+				"name" : "/touchfloor4/y",
+				"type" : "f",
+				"units" : "na",
+				"minimum" : 0,
+				"maximum" : 1
+			}
+		]
+	}
+}
+]

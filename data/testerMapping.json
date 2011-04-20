@@ -1,0 +1,80 @@
+{
+    "mapping": {
+        "fileversion": "dot-1",
+        "sources": [
+            {
+                "id": "s0",
+                "device": "bender",
+                "signal": "/eye1/blob1/x"
+            },
+            {
+                "id": "s1",
+                "device": "bender",
+                "signal": "/eye1/blob1/y"
+            },
+            {
+                "id": "s2",
+                "device": "bender",
+                "signal": "/ear1/lowrange/amplitude"
+            }
+        ],
+        "destinations": [
+            {
+                "id": "d0",
+                "device": "bender",
+                "signal": "/monitor/sector1/r"
+            },
+            {
+                "id": "d1",
+                "device": "bender",
+                "signal": "/monitor/sector2/r"
+            },
+            {
+                "id": "d2",
+                "device": "bender",
+                "signal": "/monitor/sector3/r"
+            }
+        ],
+        "connections": [
+            {
+                "mute": 0,
+                "mode": "expression",
+                "range": [
+                    -1,
+                    1,
+                    0,
+                    127
+                ],
+                "expression": "d0=abs(s0)*60",
+                "clipMin": "none",
+                "clipMax": "none"
+            },
+            {
+                "mute": 0,
+                "mode": "linear",
+                "range": [
+                    0,
+                    1,
+                    0,
+                    127
+                ],
+                "expression": "d1=s1*(127)+(-0)",
+                "clipMin": "none",
+                "clipMax": "none"
+            },
+            {
+                "mute": 0,
+                "mode": "linear",
+                "range": [
+                    0,
+                    1,
+                    0,
+                    127
+                ],
+                "expression": "d2=s2*(127)+(-0)",
+                "clipMin": "none",
+                "clipMax": "none"
+            }
+        ]
+    }
+}

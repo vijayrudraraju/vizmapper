@@ -76,6 +76,7 @@ var screenSizeX = 1280;
 var screenSizeY = 800;
 var mouseX = globalP.mouseX;
 var mouseY = globalP.mouseY;
+var drawCounter = 0;
 
 function globalP(p) {
 	p.mouseMoved = function() {
@@ -281,6 +282,17 @@ function globalP(p) {
 	};
 
 	p.draw = function() {
+
+		drawCounter++;
+		drawCounter = drawCounter % 240;
+
+		if (!drawCounter) {
+			$.getJSON('/data/live.json', function(data) {
+					indexLiveData(data);
+					updateActiveFilter();
+					});
+		}
+
 		if ($('#graphTab').hasClass('active')) {
 			$('html').toggleClass('graphColor',true);
 			$('html').toggleClass('listColor',false);
@@ -1238,8 +1250,55 @@ $(document).ready(function() {
 		});
 		*/
 
-        updateActiveFilter();
+        //updateActiveFilter();
+		main();
 });
+
+/* The main program. */
+function main()
+{
+    command.register("all_devices", function(cmd, args) {
+        for (d in args)
+            devices.add(args[d].name, args[d]);
+        //update_display();
+    });
+    command.register("new_device", function(cmd, args) {
+        devices.add(args.name, args);
+        //update_display();
+    });
+    command.register("del_device", function(cmd, args) {
+        devices.remove(args.name);
+        //update_display();
+    });
+
+    command.register("all_signals", function(cmd, args) {
+        for (d in args)
+            signals.add(args[d].name, args[d]);
+        //update_display();
+    });
+    command.register("new_signal", function(cmd, args) {
+        signals.add(args.name, args);
+        //update_display();
+    });
+    command.register("del_signal", function(cmd, args) {
+        signals.remove(args.name);
+        //update_display();
+    });
+
+	//add_display_tables();
+	command.start();
+	//command.send('all_devices');
+	//command.send('all_signals');
+    // Delay starting polling, because it results in a spinning wait
+    // cursor in the browser.
+	/*
+    setTimeout(
+        function(){
+			},
+        100);
+	*/
+}
+
 
 
 function executeSymbols() {
@@ -1707,13 +1766,47 @@ Array.prototype.unique = function() {
 	return [r0,count0,r1,count1,r2,count2];
 }
 
+var liveJSONBase;
+var masterLiveIndex = [];
+function indexLiveData(data) {
+	liveJSONBase = data;
+	masterLiveIndex = [];
 
+	for (var i=0;i<data.length;i++) {
+		if (data[i].direction == 0) {
+			masterLiveIndex.push([
+					data[i].name,
+					data[i].type,
+					"na",
+					data[i].min,
+					data[i].max,
+					[data[i].device_name.toLowerCase(),"input"]
+					]);
+		} else {
+			if (data[i].device_name == undefined) {
+				globalP.println(data[i].name);
+			}
+			masterLiveIndex.push([
+					data[i].name,
+					data[i].type,
+					"na",
+					data[i].min,
+					data[i].max,
+					[data[i].device_name.toLowerCase(),"output"]
+					]);
+		}
+	}
+
+	masterNetworkIndex = masterLiveIndex;
+}
 
 var jsonNetworkBase;
 var masterNetworkIndex = [];
 function indexNetworkData(data) {
 	jsonNetworkBase = data;
+	masterNetworkIndex = [];
 
+/*
 	for (var i=0;i<data.length;i++) {
 		for (var j=0;j<data[i].device.outputs.length;j++) {
 			if (data[i].device.outputs[j].units == null) {
@@ -1742,6 +1835,7 @@ function indexNetworkData(data) {
 					]);
 		}
 	}
+*/
 }
 var jsonMappingBase;
 var masterMappingIndex = [];

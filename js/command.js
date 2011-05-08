@@ -81,7 +81,7 @@ command = {
     /* Start the command service. */
     start: function ()
     {
-        command.open_websocket();
+        //command.open_websocket();
         setTimeout(function() {command.maintain_requests();}, 100);
     },
 

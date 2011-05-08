@@ -933,4 +933,4 @@ function add_signal_property_controls()
 }
 
 /* Kick things off. */
-window.onload = main;
+//window.onload = main;

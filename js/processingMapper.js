@@ -1291,12 +1291,12 @@ function main()
 	//command.send('all_signals');
     // Delay starting polling, because it results in a spinning wait
     // cursor in the browser.
-	/*
     setTimeout(
         function(){
+            command.send('all_devices');
+            command.send('all_signals');
 			},
         100);
-	*/
 }
 
 
@@ -1769,6 +1769,10 @@ Array.prototype.unique = function() {
 var liveJSONBase;
 var masterLiveIndex = [];
 function indexLiveData(data) {
+    if (data == null) {
+        return;
+    }
+
 	liveJSONBase = data;
 	masterLiveIndex = [];
 

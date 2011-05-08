@@ -131,6 +131,8 @@ class MapperHTTPServer(SimpleHTTPServer.SimpleHTTPRequestHandler):
 def handler_page(out, args):
     print >>out, html_file.read() 
 
+live_file_cache = []
+
 def handler_wait_command(out, args):
     i=0
     while len(message_pipe)==0:
@@ -151,6 +153,8 @@ def handler_wait_command(out, args):
     print >>out, json.dumps( {"id": int(args['id']),
                               "cmd": msg[0],
                               "args": msg[1]} )
+    live_file = open(file_path,'w')
+    live_file.write(json.dumps(live_file_cache,indent=4))
 
 def handler_send_command(out, args):
     try:

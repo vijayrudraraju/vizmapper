@@ -2,6 +2,10 @@
 
 import webmapper_http_server as server
 import mapper
+import sys
+
+if 'tracing' in sys.argv[1:]:
+    server.tracing = True
 
 monitor = mapper.monitor()
 
@@ -24,11 +28,20 @@ def on_link(link, action):
         server.send_command("del_link", link)
 
 def on_connection(con, action):
-    print con
     if action == mapper.MDB_NEW:
         server.send_command("new_connection", con)
+    if action == mapper.MDB_MODIFY:
+        server.send_command("mod_connection", con)
     if action == mapper.MDB_REMOVE:
         server.send_command("del_connection", con)
+
+def set_connection(con):
+    if con.has_key('mode'):
+        con['mode'] = {'bypass': mapper.MO_BYPASS,
+                       'linear': mapper.MO_LINEAR,
+                       'calibrate': mapper.MO_CALIBRATE,
+                       'expression': mapper.MO_EXPRESSION}[con['mode']]
+    monitor.modify(con)
 
 monitor.db.add_device_callback(on_device)
 monitor.db.add_signal_callback(on_signal)
@@ -51,6 +64,8 @@ server.add_command_handler("all_links",
 server.add_command_handler("all_connections",
                            lambda x: ("all_connections",
                                       list(monitor.db.all_mappings())))
+
+server.add_command_handler("set_connection", set_connection)
 
 server.add_command_handler("link",
                            lambda x: monitor.link(*map(str,x)))

@@ -18,6 +18,16 @@ devActions = null;
 sigActions = null;
 arrows = [];
 
+connectionModes = ["None", "Byp", "Line", "Expr", "Calib"];
+connectionModesDisplayOrder = ["Byp", "Line", "Calib", "Expr"];
+connectionModeCommands = {"Byp": 'bypass',
+                          "Line": 'linear',
+                          "Calib": 'calibrate',
+                          "Expr": 'expression'};
+boundaryModes = ["None", "Mute", "Clamp", "Fold", "Wrap"];
+boundaryIcons = ["boundaryNone", "boundaryUp", "boundaryDown",
+                 "boundaryMute", "boundaryClamp", "boundaryWrap"];
+
 function update_display()
 {
     update_tabs();
@@ -26,8 +36,8 @@ function update_display()
     else
         update_signals(selectedTab);
 
-    update_arrows();
     update_selection();
+    update_arrows();
 }
 
 function update_devices()
@@ -156,6 +166,7 @@ function update_selection()
 function cleanup_arrows()
 {
     for (a in arrows) {
+        svgArea.removeChild(arrows[a].border);
         svgArea.removeChild(arrows[a]);
     }
     arrows = [];
@@ -171,10 +182,12 @@ function update_links()
         $('td:contains('+l.src_name+')', leftTable).each(
             function(i,e){
                 var left = e.parentNode;
+                var leftsel = $(left).hasClass('trsel');
                 $('td:contains('+l.dest_name+')', rightTable).each(
                     function(i,e){
                         var right = e.parentNode;
-                        create_arrow(left, right);
+                        var rightsel = $(right).hasClass('trsel');
+                        create_arrow(left, right, leftsel && rightsel);
                     });
             });
     }
@@ -198,22 +211,35 @@ function update_connections()
         $('td:contains('+c.src_name+')', leftTable).each(
             function(i,e){
                 var left = e.parentNode;
+                var leftsel = $(left).hasClass('trsel');
                 $('td:contains('+c.dest_name+')', rightTable).each(
                     function(i,e){
                         var right = e.parentNode;
-                        create_arrow(left, right);
+                        var rightsel = $(right).hasClass('trsel');
+                        create_arrow(left, right, leftsel && rightsel);
                     });
             });
     }
 }
 
 /* params are TR elements, one from each table */
-function create_arrow(left, right)
+function create_arrow(left, right, sel)
 {
     var line = document.createElementNS(svgns, "path");
-    line.setAttribute("stroke", "black");
+    if (sel)
+        line.setAttribute("stroke", "red");
+    else
+        line.setAttribute("stroke", "black");
     line.setAttribute("fill", "none");
     line.setAttribute("stroke-width", 2);
+    line.setAttribute("cursor", "pointer");
+
+    line.border = document.createElementNS(svgns, "path");
+    line.border.setAttribute("stroke", "blue");
+    line.border.setAttribute("fill", "none");
+    line.border.setAttribute("stroke-width", "10pt");
+    line.border.setAttribute("stroke-opacity", "0");
+    line.border.setAttribute("cursor", "pointer");
 
     var L = fullOffset(left);
     var R = fullOffset(right);
@@ -228,9 +254,19 @@ function create_arrow(left, right)
     var p = "M " + x1 + " " + y1 + " C " + (x1+x2)/2 + " " + y1
         + " " + (x1+x2)/2 + " " + y2 + " " + x2 + " " + y2;
     line.setAttribute("d", p);
+    line.border.setAttribute("d", p);
 
+    svgArea.appendChild(line.border);
     svgArea.appendChild(line);
     arrows.push(line);
+
+    var onclick = function (e) {
+        select_tr(left);
+        select_tr(right);
+        e.stopPropagation();
+    };
+    line.onclick = onclick;
+    line.border.onclick = onclick;
 }
 
 function select_tab(tab)
@@ -274,6 +310,8 @@ function select_tr(tr)
     }
 
     selectLists[selectedTab][i] = l;
+    update_arrows();
+    update_connection_properties();
 }
 
 function deselect_all()
@@ -286,6 +324,162 @@ function deselect_all()
             selectLists[selectedTab][1].remove(e.firstChild.innerHTML);
             $(this).removeClass('trsel');
         });
+    update_arrows();
+    update_connection_properties();
+}
+
+function update_connection_properties()
+{
+    if (selectedTab == "All Devices")
+        return;
+
+    var a = function(x) { return $(x,actionDiv); };
+
+    var clear_props = function() {
+        a(".mode").removeClass("modesel");
+        a("*").removeClass('waiting');
+        a("#expression").val('');
+        a("#rangeSrcMin").val('');
+        a("#rangeSrcMax").val('');
+        a("#rangeDestMin").val('');
+        a("#rangeDestMax").val('');
+        set_boundary(a(".boundary"), 0);
+    }
+
+    var conns = get_selected(connections);
+    if (conns.length > 1) {
+        // TODO
+        clear_props();
+    }
+    else if (conns.length == 1) {
+        var c = conns[0];
+        clear_props();
+        a(".mode"+connectionModes[c.mode]).addClass("modesel");
+        a("#expression").val(c.expression);
+        if (c.range[0]!=null) { a("#rangeSrcMin").val(c.range[0]); }
+        if (c.range[1]!=null) { a("#rangeSrcMax").val(c.range[1]); }
+        if (c.range[2]!=null) { a("#rangeDestMin").val(c.range[2]); }
+        if (c.range[3]!=null) { a("#rangeDestMax").val(c.range[3]); }
+        if (c.clip_min!=null) { set_boundary(a("#boundaryMin"),c.clip_min,0);};
+        if (c.clip_max!=null) { set_boundary(a("#boundaryMax"),c.clip_max,1);};
+    }
+    else {
+        clear_props();
+    }
+}
+
+function update_connection_properties_for(conn, conns)
+{
+    if (conns.length == 1) {
+        if (conns[0].src_name == conn.src_name
+            && conns[0].dest_name == conn.dest_name)
+        {
+            update_connection_properties();
+        }
+    }
+}
+
+function get_selected(list)
+{
+    var L = $('.trsel', leftTable);
+    var R = $('.trsel', rightTable);
+    var vals = [];
+
+    L.map(function() {
+            var left = this;
+            R.map(function() {
+                    var right = this;
+                    var key = left.firstChild.innerHTML+'>'+right.firstChild.innerHTML;
+                    var v = list.get(key);
+                    if (v)
+                        vals.push(v);
+                });
+        });
+    return vals;
+}
+
+function set_boundary(boundaryElement, value, ismax)
+{
+    for (i in boundaryIcons)
+        boundaryElement.removeClass(boundaryIcons[i]);
+
+    if (value == 3) { //'Fold' special case, icon depends on direction
+        if (ismax)
+            boundaryElement.addClass('boundaryDown');
+        else
+            boundaryElement.addClass('boundaryUp');
+    }
+    else if (value < 5) {
+        boundaryElement.addClass('boundary'+boundaryModes[value]);
+    }
+}
+
+function copy_selected_connection()
+{
+    var conns = get_selected(connections);
+    if (conns.length!=1) return;
+    var args = {};
+
+    // copy existing connection properties
+    for (var c in conns[0]) {
+        args[c] = conns[0][c];
+    }
+    return args;
+}
+
+function selected_connection_set_mode(modestring)
+{
+    var modecmd = connectionModeCommands[modestring];
+    if (!modecmd) return;
+
+    var args = copy_selected_connection();
+
+    // adjust the mode
+    args['mode'] = modecmd;
+
+    // send the command, should receive a /connection/modify message after.
+    command.send('set_connection', args);
+}
+
+function selected_connection_set_input(what,field,idx)
+{
+    var args = copy_selected_connection();
+
+    // TODO: this is a bit out of hand, need to simplify the mode
+    // strings and indexes.
+    var modecmd = connectionModeCommands[connectionModes[args['mode']]];
+    args['mode'] = modecmd;
+
+    // adjust the field
+    if (idx===undefined)
+        args[what] = field.value;
+    else
+        args[what][idx] = parseFloat(field.value);
+
+    // send the command, should receive a /connection/modify message after.
+    command.send('set_connection', args);
+
+    $(field).addClass('waiting');
+}
+
+function selected_connection_set_boundary(boundarymode, ismax, div)
+{
+    var args = copy_selected_connection();
+
+    // TODO: this is a bit out of hand, need to simplify the mode
+    // strings and indexes.
+    var modecmd = connectionModeCommands[connectionModes[args['mode']]];
+    args['mode'] = modecmd;
+
+    var c = ismax ? 'clip_max' : 'clip_min';
+    args[c] = boundarymode;
+
+    // send the command, should receive a /connection/modify message after.
+    command.send('set_connection', args);
+
+    // Do not set the background color, since background is used to
+    // display icon.  Enable this if a better style decision is made.
+    //$(div).addClass('waiting');
 }
 
 function on_table_scroll()
@@ -351,20 +545,29 @@ function on_disconnect(e)
 
 function on_boundary(e)
 {
-    var types = ["boundaryNone", "boundaryContinueUp", "boundaryContinueDown",
-                 "boundaryMute", "boundaryClamp", "boundaryWrap",
-                 null];
-    var b = $(e.currentTarget);
-
-    for (t in types) {
-        if (b.hasClass(types[t])) {
-            var u = types[parseInt(t)+1];
-            if (u==null) u = types[0];
-            b.removeClass(types[t]);
-            b.addClass(u);
+    for (var i in boundaryIcons) {
+        if ($(e.currentTarget).hasClass(boundaryIcons[i]))
             break;
-        }
     }
+    if (i >= boundaryIcons.length)
+        return;
+
+    var b = [0, 3, 3, 1, 2, 4][i];
+    b = b + 1;
+    if (b >= boundaryModes.length)
+        b = 0;
+
+    // Enable this to set the icon immediately. Currently disabled
+    // since the 'waiting' style is not used to indicate tentative
+    // settings for boundary modes.
+
+    // set_boundary($(e.currentTarget), b,
+    //              e.currentTarget.id=='boundaryMax');
+
+    selected_connection_set_boundary(b, e.currentTarget.id=='boundaryMax',
+                                     e.currentTarget);
+
+    e.stopPropagation();
 }
 
 function set_actions(a)
@@ -472,14 +675,25 @@ function main()
             connections.add(args[d].src_name+'>'+args[d].dest_name,
                             args[d]);
         update_display();
+        for (d in args)
+            update_connection_properties_for(args[d],
+                                             get_selected(connections));
     });
     command.register("new_connection", function(cmd, args) {
         connections.add(args.src_name+'>'+args.dest_name, args);
         update_display();
+        update_connection_properties_for(args, get_selected(connections));
+    });
+    command.register("mod_connection", function(cmd, args) {
+        connections.add(args.src_name+'>'+args.dest_name, args);
+        update_display();
+        update_connection_properties_for(args, get_selected(connections));
     });
     command.register("del_connection", function(cmd, args) {
+        var conns = get_selected(connections);
         connections.remove(args.src_name+'>'+args.dest_name);
         update_display();
+        update_connection_properties_for(args, conns);
     });
 
     var body = document.getElementsByTagName('body')[0];
@@ -502,7 +716,7 @@ function main()
             window.onresize = function (e) {
                 position_dynamic_elements();
                 update_arrows();
-            }
+            };
         },
         100);
 }
@@ -614,17 +828,30 @@ function add_signal_property_controls()
 
     var modesdiv = document.createElement('div');
     modesdiv.className = "modesDiv";
-    var modes = ["Mute", "Byp", "Line", "Calib", "Expr"];
-    for (m in modes) {
+    for (m in connectionModesDisplayOrder) {
         var d = document.createElement('div');
-        d.innerHTML = modes[m];
+        d.innerHTML = connectionModesDisplayOrder[m];
+        d.className = "mode mode"+connectionModesDisplayOrder[m];
+        d.onclick = function(m) { return function(e) {
+            selected_connection_set_mode(m);
+            e.stopPropagation();
+            }; }(connectionModesDisplayOrder[m]);
         modesdiv.appendChild(d);
     }
 
+    var handle_input=function(inp,field,idx) {
+        inp.onclick = function(e){e.stopPropagation();};
+        inp.onkeyup = function(e){if (e.keyCode==13)
+                selected_connection_set(field,inp,idx);};
+        inp.onblur = function(){selected_connection_set_input(field,inp,idx);};
+    };
+
     var d = document.createElement('input');
+    d.type = 'text';
     d.maxLength = 15;
     d.size = 15;
     d.id = 'expression';
+    handle_input(d, 'expression');
     modesdiv.appendChild(d);
     controls.appendChild(modesdiv);
 
@@ -643,6 +870,7 @@ function add_signal_property_controls()
     d.size = 5;
     d.className = "rangeMin";
     d.id = 'rangeSrcMin';
+    handle_input(d, 'range', 0);
     srcrange.appendChild(d);
 
     var d = document.createElement('div');
@@ -654,6 +882,7 @@ function add_signal_property_controls()
     d.size = 5;
     d.className = "rangeMax";
     d.id = 'rangeSrcMax';
+    handle_input(d, 'range', 1);
     srcrange.appendChild(d);
     rangesdiv.appendChild(srcrange);
 
@@ -667,6 +896,7 @@ function add_signal_property_controls()
     var d = document.createElement('div');
     d.className = "boundary boundaryClamp";
     d.onclick = on_boundary;
+    d.id = "boundaryMin";
     destrange.appendChild(d);
 
     var d = document.createElement('input');
@@ -674,6 +904,7 @@ function add_signal_property_controls()
     d.size = 5;
     d.className = "rangeMin";
     d.id = 'rangeDestMin';
+    handle_input(d, 'range', 2);
     destrange.appendChild(d);
 
     var d = document.createElement('div');
@@ -685,11 +916,13 @@ function add_signal_property_controls()
     d.size = 5;
     d.className = "rangeMax";
     d.id = 'rangeDestMax';
+    handle_input(d, 'range', 3);
     destrange.appendChild(d);
 
     var d = document.createElement('div');
     d.className = "boundary boundaryClamp";
     d.onclick = on_boundary;
+    d.id = "boundaryMax";
     destrange.appendChild(d);
 
     rangesdiv.appendChild(destrange);

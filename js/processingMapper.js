@@ -290,6 +290,7 @@ function globalP(p) {
 			$.getJSON('/data/live.json', function(data) {
 					indexLiveData(data);
 					updateActiveFilter();
+                    updateLayout();
 					});
 		}
 
@@ -347,6 +348,7 @@ function addConnection() {
     }
 
     updateActiveFilter();
+    updateLayout();
 }
 function removeConnection() {
     for (var j=0;j<masterMappingIndex.length;j++) {
@@ -357,6 +359,7 @@ function removeConnection() {
     }
 
     updateActiveFilter();
+    updateLayout();
 }
 
 
@@ -1113,15 +1116,19 @@ var isHelping = false;
 $(document).ready(function() {
 		globalP = new Processing($('#globalCanvas')[0],globalP);
 
+/*
 		$.getJSON('/data/testerNetwork.json', function(data) {
 			indexNetworkData(data);
 			updateActiveFilter();
+            updateLayout();
 			//activateListMode();
 		});
 		$.getJSON('/data/testerMapping.json', function(data) {
 			indexMappingData(data);
 			updateActiveFilter();
+            updateLayout();
 		});
+        */
 
 		$('span').hover(function(){
 			$(this).toggleClass('normalHelp',false);
@@ -1232,6 +1239,7 @@ $(document).ready(function() {
 		$('#filterInput').keyup(function(event) {
 			event.preventDefault();
 			updateActiveFilter();
+            updateLayout();
 		});
 		/*
 		$('#executeInput').keydown(function(event) {
@@ -1363,6 +1371,8 @@ function executeSymbols() {
 	}
 
 	updateActiveFilter();
+    updateLayout();
+
 	$('#executeInput').val("");
 	$('#executeText').html("");
 }
@@ -1544,6 +1554,7 @@ function updateActiveFilter() {
 		compoundQuery[2] = [["/"]];
 	}
 
+    test_filterMatches = [[],[],[]];
 	filterMatches = [[],[],[]];
 	tables = [[],[]];
 	for (var i=0;i<masterNetworkIndex.length;i++) {
@@ -1567,15 +1578,17 @@ function updateActiveFilter() {
 				}
 			}
 
-			if (masterNetworkIndex[i][5][1] == "input") {	
-				filterMatches[1].push(masterNetworkIndex[i][0]);	
-			} else if (masterNetworkIndex[i][5][1] == "output") {	
+			if (masterNetworkIndex[i][5][1] == "output") {	
 				filterMatches[0].push(masterNetworkIndex[i][0]);	
-			}
+                test_filterMatches[0].push([masterNetworkIndex[i][5][0],masterNetworkIndex[i][0]]);
+			} else if (masterNetworkIndex[i][5][1] == "input") {	
+				filterMatches[1].push(masterNetworkIndex[i][0]);	
+                test_filterMatches[1].push([masterNetworkIndex[i][5][0],masterNetworkIndex[i][0]]);
+            }
 			tables[0].push(masterNetworkIndex[i]);
-
 		}
 	}
+
 	//inputs+outputs
 	levels = [[],[]];
 	activeGlyphMap = [[[],[],[]],[[],[],[]],[]]; //outputs,inputs,connections
@@ -1717,6 +1730,76 @@ function updateActiveFilter() {
 	//$('#filterText').html(highlightedFilter);
 
 }
+function updateLayout() {
+
+}
+
+//inputs+outputs
+var test_preLevels_1 = [[],[]];
+var test_levels_1 = [[],[]];
+var test_filterMatches = [[],[],[]];
+function testLayout() {
+    test_levels_1 = [[],[]];
+
+	//inputs
+	test_filterMatches[0].sort();
+	for (var i=0;i<test_filterMatches[0].length;i++) {
+        test_levels_1[0].push([test_filterMatches[0][i][0]]);  
+
+		var splitArray = test_filterMatches[0][i][1].split("/");
+		for (var j=1;j<splitArray.length;j++) {
+            test_levels_1[0][test_levels_1[0].length-1].push(splitArray[j]);
+		}
+	}
+	test_preLevels_1[0] = test_levels_1[0];
+    test_levels_1[0] = test_levels_1[0].cluster();
+	//test_levels_1[0] = test_levels_1[0].unique();
+
+
+	//outputs
+	test_filterMatches[1].sort();
+	for (var i=0;i<test_filterMatches[1].length;i++) {
+        test_levels_1[1].push([test_filterMatches[1][i][0]]);
+
+		var splitArray = test_filterMatches[1][i][1].split("/");
+		for (var j=1;j<splitArray.length;j++) {
+            test_levels_1[1][test_levels_1[1].length-1].push(splitArray[j]);
+		}
+	}
+    test_preLevels_1[1] = test_levels_1[1];
+    test_levels_1[1] = test_levels_1[1].cluster(1);
+	//test_levels_1[1] = test_levels_1[1].unique();
+}
+
+Array.prototype.cluster = function(depth) {
+	var labels_1 = new Array();
+    var clusters_1 = new Array();
+
+    o: for (var i=0,n=this.length;i<n;i++) {
+		for (var j=0,y=labels_1.length;j<y;j++) {
+			if (labels_1[j]==this[i][depth]) {
+                clusters_1[j].push(this[i]);
+				continue o;
+			}
+        }
+
+        if (this[i].length > depth) {
+            labels_1[labels_1.length] = this[i][depth];
+            clusters_1[clusters_1.length] = [this[i]];
+        }
+    }
+
+    for (var i=0;i<clusters_1.length;i++) {
+        clusters_1[i] = clusters_1[i].cluster(depth+1); 
+        if (clusters_1[i][0].length==0) {
+            clusters_1[i] = 0; 
+        }
+    }
+
+    return [labels_1,clusters_1];
+}
+
+
 Array.prototype.unique = function() {
 	var count0 = new Array();
 	var count1 = new Array();
@@ -1766,8 +1849,11 @@ Array.prototype.unique = function() {
 	return [r0,count0,r1,count1,r2,count2];
 }
 
+
 var liveJSONBase;
 var masterLiveIndex = [];
+var masterNetworkIndex = [];
+var masterMappingIndex = [];
 function indexLiveData(data) {
     if (data == null) {
         return;
@@ -1804,13 +1890,13 @@ function indexLiveData(data) {
 	masterNetworkIndex = masterLiveIndex;
 }
 
+/*
 var jsonNetworkBase;
 var masterNetworkIndex = [];
 function indexNetworkData(data) {
 	jsonNetworkBase = data;
 	masterNetworkIndex = [];
 
-/*
 	for (var i=0;i<data.length;i++) {
 		for (var j=0;j<data[i].device.outputs.length;j++) {
 			if (data[i].device.outputs[j].units == null) {
@@ -1839,7 +1925,6 @@ function indexNetworkData(data) {
 					]);
 		}
 	}
-*/
 }
 var jsonMappingBase;
 var masterMappingIndex = [];
@@ -1887,7 +1972,7 @@ function indexMappingData(data) {
 
 	masterMappingIndex = mappingProcessingIndex[2];
 }
-
+*/
 
 
 

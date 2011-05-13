@@ -19,7 +19,6 @@ file_path = os.getcwd()+'/data/live.json'
 live_file = open(file_path,'w')
 
 html_file_path = os.getcwd()+'/html/processingMapper.html'
-html_file = open(html_file_path,'r')
 
 message_pipe = []
 tracing = True
@@ -129,7 +128,9 @@ class MapperHTTPServer(SimpleHTTPServer.SimpleHTTPRequestHandler):
         self.wfile.flush()
 
 def handler_page(out, args):
+    html_file = open(html_file_path,'r')
     print >>out, html_file.read() 
+    html_file.close()
 
 live_file_cache = []
 

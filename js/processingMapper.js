@@ -58,9 +58,13 @@ var numberOfItemsPerPage = 1;
 var signalPagePointer = 0;
 var mappingPagePointer = 0;
 
-var executionFeedbackString = "";
-var vizGlyphBoundaryMap = [[[],[],[]],[[],[],[]]]; // outputs(outer category,middle,inner),inputs(outer,middle,inner),connections
-var activeGlyphMap = [[[],[],[]],[[],[],[]],[]]; // outputs(outer,middle,inner),inputs(outer,middle,inner),connections
+// outputs,inputs
+var nodeGlyphMap = [[],[]]; 
+// outputs,inputs
+var hoverGlyphMap = [[],[]];
+// output labels, input labels
+var listGlyphMap = [[],[]];
+var traversalGlyphMap = [[],[]];
 var mappingVizMap = [[],[]]; // outputs, inputs
 
 var selectedOutput = "";
@@ -72,11 +76,16 @@ var selectedRemoveInput = "";
 var xs = [];
 var ys = [];
 
-var screenSizeX = 1280;
-var screenSizeY = 800;
+var screenWidth = 1280;
+var screenHeight = 800;
 var mouseX = globalP.mouseX;
 var mouseY = globalP.mouseY;
 var drawCounter = 0;
+
+var outputVizTrace = [];
+var inputVizTrace = [];
+var outputLabelTrace = ["output signals"];
+var inputLabelTrace = ["input signals"];
 
 function globalP(p) {
 	p.mouseMoved = function() {
@@ -113,65 +122,38 @@ function globalP(p) {
 
 						if (mouseX<microX+3 && mouseX>microX-3 &&
 								mouseY<microY+3 && mouseY>microY-3) {
-							activeGlyphMap[2][i] = true;
+							hoverGlyphMap[2][i] = true;
 							break;
 						}
 						if (j == xLength-1) {
-							activeGlyphMap[2][i] = false;
+							hoverGlyphMap[2][i] = false;
 						}
 					}
 
 				} else {
-					activeGlyphMap[2][i] = false;
+					hoverGlyphMap[2][i] = false;
 				}
-				if (activeGlyphMap[2][i]) {
+				if (hoverGlyphMap[2][i]) {
 					for (var j=i+1;j<mappingVizMap[0].length;j++) {
-						activeGlyphMap[2][j] = false;
+						hoverGlyphMap[2][j] = false;
 					}
 					break;
 				}
 			}
 		}
         */
-
-		// hover detection of outputs and inputs
-		// this is the dumb way of doing this
-		if ($('#graphTab').hasClass('active')) {
-			var thisX = 0; // input,level,container,drawingNumbers,thisX
-			var thisY = 0;
-			var thisRadius = 0;
-
-			for (var i=0;i<vizGlyphBoundaryMap[0][0].length;i++) {
-				thisX = vizGlyphBoundaryMap[0][0][i][0][0];
-				thisY = vizGlyphBoundaryMap[0][0][i][0][1];
-				thisRadius = vizGlyphBoundaryMap[0][0][i][0][2]/2;
-				if (mouseX<thisX+thisRadius && mouseX>thisX-thisRadius &&
-						mouseY<thisY+thisRadius && mouseY>thisY-thisRadius) {
-					activeGlyphMap[0][0][i] = true;
-				} else {
-					activeGlyphMap[0][0][i] = false;
-				}
-			}
-			for (var i=0;i<vizGlyphBoundaryMap[1][0].length;i++) {
-				thisX = vizGlyphBoundaryMap[1][0][i][0][0];
-				thisY = vizGlyphBoundaryMap[1][0][i][0][1];
-				thisRadius = vizGlyphBoundaryMap[1][0][i][0][2]/2;
-				if (mouseX<thisX+thisRadius && mouseX>thisX-thisRadius &&
-					mouseY<thisY+thisRadius && mouseY>thisY-thisRadius) {
-					activeGlyphMap[1][0][i] = true;
-				} else {
-					activeGlyphMap[1][0][i] = false;
-				}
-			}
-		}
 	};
 
 	p.mouseClicked = function() {
+		if ($('#graphTab').hasClass('active')) {
+            detectNodeClick();
+            detectTraversalClick();
+		}
         /*
         if ($('#graphTab').hasClass('active')) {
             // connection selection for removal
-            for (var i=0;i<activeGlyphMap[2].length;i++) {
-                if (activeGlyphMap[2][i]) {
+            for (var i=0;i<hoverGlyphMap[2].length;i++) {
+                if (hoverGlyphMap[2][i]) {
                     selectedRemoveOutput = tables[1][i].output[2];
                     selectedRemoveInput = tables[1][i].input[2];
                     $('#removeConnectionForm').toggle(true);
@@ -181,11 +163,11 @@ function globalP(p) {
 			// output and input selection for mappings
 			var clearSelection = true;
 			var thisString = "";
-			for (var i=0;i<activeGlyphMap[0][0].length;i++) {
+			for (var i=0;i<hoverGlyphMap[0][0].length;i++) {
 				thisString = "";
-				if (activeGlyphMap[0][0][i]) {
-					for (var j=vizGlyphBoundaryMap[0][0][i][1].length-1;j>=0;j--) {
-						thisString += "/"+vizGlyphBoundaryMap[0][0][i][1][j];
+				if (hoverGlyphMap[0][0][i]) {
+					for (var j=nodeGlyphMap[0][0][i][1].length-1;j>=0;j--) {
+						thisString += "/"+nodeGlyphMap[0][0][i][1][j];
 					}
 					selectedOutput = thisString;
 					clearSelection = false;
@@ -194,11 +176,11 @@ function globalP(p) {
 			}
 
 			selectedInput = "";
-			for (var i=0;i<activeGlyphMap[1][0].length;i++) {
+			for (var i=0;i<hoverGlyphMap[1][0].length;i++) {
 				thisString = "";
-				if (activeGlyphMap[1][0][i]) {
-					for (var j=vizGlyphBoundaryMap[1][0][i][1].length-1;j>=0;j--) {
-						thisString += "/"+vizGlyphBoundaryMap[1][0][i][1][j];
+				if (hoverGlyphMap[1][0][i]) {
+					for (var j=nodeGlyphMap[1][0][i][1].length-1;j>=0;j--) {
+						thisString += "/"+nodeGlyphMap[1][0][i][1][j];
 					}
 					selectedInput = thisString;
 					clearSelection = false;
@@ -225,32 +207,22 @@ function globalP(p) {
 	};
 
 	p.setup = function() {
-		//#x designates (universal tag x)
-		//&x designates (unique tag x)
-		//%x designates (procedure tag x)
-		//#x<>#y directional link from (tag x) to (tag y)
-		//#x><#y unlinks (tag x) from (tag y)
-		//#x->#y tags (tag y) with (tag x) -- pushes tag through chain
-		//#x<-#y untags (tag y) with (tag x) -- pushes tag through chain
-		//-<#x pulls structure from (tag x)
-
 		//p.println(p.PFont.list());
 
-		p.size(screenSizeX,screenSizeY);
+		p.size(screenWidth,screenHeight);
 		var font = p.loadFont("monospace");
 		p.textFont(font);
 	};
 
 	p.draw = function() {
 
-		drawCounter++;
-		drawCounter = drawCounter % 240;
-
 		if (!drawCounter) {
 			$.getJSON('/data/live.json', function(data) {
 					indexLiveData(data);
 					updateActiveFilter();
-                    //updateLayout();
+                    updateSignalMatches();
+                    updateLevelStructure();
+                    updateHoverGlyphMap();
 					});
 		}
 
@@ -261,11 +233,13 @@ function globalP(p) {
             $('#signalsFile').toggle(false);
             $('#mappingsFile').toggle(false);
 			p.background(207);
-            updateSignalMatches();
-            updateLayout();
+            drawBackground();
+            drawTraversalGlyphs();
             drawGraph();
+            drawListGlyphs();
+            updateHoverState();
             //drawConnectionProcess();
-            drawMouseFeedback();
+            //drawMouseFeedback();
 		} else if ($('#listTab').hasClass('active')) {
 			$('html').toggleClass('graphColor',false);
 			$('html').toggleClass('listColor',true);
@@ -282,9 +256,46 @@ function globalP(p) {
 
 		if (debugMode) {
 		}
+
+		drawCounter++;
+		drawCounter = drawCounter % 240;
+
 	};
 }
 
+
+function updateHoverState() {
+    // hover detection of outputs and inputs
+    // this is the dumb way of doing this
+    if ($('#graphTab').hasClass('active')) {
+        var thisX = 0; // input,level,container,drawingNumbers,thisX
+        var thisY = 0;
+        var thisRadius = 0;
+
+        for (var i=0;i<nodeGlyphMap[0].length;i++) {
+            thisX = nodeGlyphMap[0][i][0][0];
+            thisY = nodeGlyphMap[0][i][0][1];
+            thisRadius = nodeGlyphMap[0][i][0][2]/2;
+            if (mouseX<thisX+thisRadius && mouseX>thisX-thisRadius &&
+                    mouseY<thisY+thisRadius && mouseY>thisY-thisRadius) {
+                hoverGlyphMap[0][i] = true;
+            } else {
+                hoverGlyphMap[0][i] = false;
+            }
+        }
+        for (var i=0;i<nodeGlyphMap[1].length;i++) {
+            thisX = nodeGlyphMap[1][i][0][0];
+            thisY = nodeGlyphMap[1][i][0][1];
+            thisRadius = nodeGlyphMap[1][i][0][2]/2;
+            if (mouseX<thisX+thisRadius && mouseX>thisX-thisRadius &&
+                    mouseY<thisY+thisRadius && mouseY>thisY-thisRadius) {
+                hoverGlyphMap[1][i] = true;
+            } else {
+                hoverGlyphMap[1][i] = false;
+            }
+        }
+    }
+}
 
 
 function addConnection() {
@@ -310,7 +321,6 @@ function addConnection() {
     }
 
     updateActiveFilter();
-    //updateLayout();
 }
 function removeConnection() {
     for (var j=0;j<masterMappingIndex.length;j++) {
@@ -321,7 +331,6 @@ function removeConnection() {
     }
 
     updateActiveFilter();
-    //updateLayout();
 }
 
 
@@ -334,16 +343,16 @@ function drawMouseFeedback() {
     var thisHeight = 75;
     thisX = mouseX+20;
     thisY = mouseY+20;
-    if (thisX+thisWidth>screenSizeX) {
+    if (thisX+thisWidth>screenWidth) {
         thisX = mouseX-20-thisWidth;
     }
-    if (thisY+thisHeight>screenSizeY) {
+    if (thisY+thisHeight>screenHeight) {
         thisY = mouseY-20-thisHeight;
     }
 
 /*
-    for (var i=0;i<activeGlyphMap[2].length;i++) {
-        if (activeGlyphMap[2][i]) {
+    for (var i=0;i<hoverGlyphMap[2].length;i++) {
+        if (hoverGlyphMap[2][i]) {
             globalP.noStroke();
             globalP.fill(255);
             globalP.rect(thisX,thisY,thisWidth,thisHeight);
@@ -374,20 +383,20 @@ function drawMouseFeedback() {
     var textY = mouseY+20;
     thisX = mouseX+20+(thisWidth/2);
     thisY = mouseY+20+(thisHeight/2);
-    if (thisX+thisWidth>screenSizeX) {
+    if (thisX+thisWidth>screenWidth) {
         thisX = mouseX-20-thisWidth+(thisWidth/2);
         textX = mouseX-10-thisWidth;
     }
-    if (thisY+thisHeight>screenSizeY) {
+    if (thisY+thisHeight>screenHeight) {
         thisY = mouseY-20-thisHeight+(thisHeight/2);
         textY = mouseY-20-thisHeight;
     }
 
     // output selection feedback
-    for (var i=0;i<activeGlyphMap[0][0].length;i++) {
-        thisString = vizGlyphBoundaryMap[0][0][i][1];
+    for (var i=0;i<hoverGlyphMap[0].length;i++) {
+        thisString = nodeGlyphMap[0][i][1];
 
-        if (activeGlyphMap[0][0][i]) {
+        if (hoverGlyphMap[0][i]) {
             globalP.noStroke();
             globalP.fill(0);
             globalP.ellipse(thisX,thisY,thisWidth,thisHeight);
@@ -399,19 +408,19 @@ function drawMouseFeedback() {
         }
         if (thisString == selectedOutput) {
             globalP.fill(255,0,0);
-            globalP.ellipse(vizGlyphBoundaryMap[0][0][i][0][0],
-                    vizGlyphBoundaryMap[0][0][i][0][1],
-                    vizGlyphBoundaryMap[0][0][i][0][2],
-                    vizGlyphBoundaryMap[0][0][i][0][2]
+            globalP.ellipse(nodeGlyphMap[0][i][0][0],
+                    nodeGlyphMap[0][i][0][1],
+                    nodeGlyphMap[0][i][0][2],
+                    nodeGlyphMap[0][i][0][2]
                     );
         }
     }
 
     // input selection feedback
-    for (var i=0;i<activeGlyphMap[1][0].length;i++) {
-        thisString = vizGlyphBoundaryMap[1][0][i][1];
+    for (var i=0;i<hoverGlyphMap[1].length;i++) {
+        thisString = nodeGlyphMap[1][i][1];
 
-        if (activeGlyphMap[1][0][i]) {
+        if (hoverGlyphMap[1][i]) {
             globalP.noStroke();
             globalP.fill(0);
             globalP.ellipse(thisX,thisY,thisWidth,thisHeight);
@@ -423,10 +432,10 @@ function drawMouseFeedback() {
         }
         if (thisString == selectedInput) {
             globalP.fill(255,0,0);
-            globalP.ellipse(vizGlyphBoundaryMap[1][0][i][0][0],
-                    vizGlyphBoundaryMap[1][0][i][0][1],
-                    vizGlyphBoundaryMap[1][0][i][0][2],
-                    vizGlyphBoundaryMap[1][0][i][0][2]
+            globalP.ellipse(nodeGlyphMap[1][i][0][0],
+                    nodeGlyphMap[1][i][0][1],
+                    nodeGlyphMap[1][i][0][2],
+                    nodeGlyphMap[1][i][0][2]
                     );
         }
     }
@@ -439,7 +448,7 @@ function drawConnectionProcess() {
 
     var cp1x = 450;
     var cp1y = 45+(760/2);
-    var cp2x = screenSizeX-450;
+    var cp2x = screenWidth-450;
     var cp2y = 45+(760/2);
 
 
@@ -452,19 +461,19 @@ function drawConnectionProcess() {
     } else {
         $('#addMappingForm').toggle(false);
         if (selectedOutput != "") {
-            for (var i=0;i<activeGlyphMap[0][0].length;i++) {
+            for (var i=0;i<hoverGlyphMap[0].length;i++) {
                 thisString = "";
-                for (var j=vizGlyphBoundaryMap[0][0][i][1].length-1;j>=0;j--) {
-                    thisString += "/"+vizGlyphBoundaryMap[0][0][i][1][j];
+                for (var j=nodeGlyphMap[0][0][i][1].length-1;j>=0;j--) {
+                    thisString += "/"+nodeGlyphMap[0][0][i][1][j];
                 }
                 if (thisString == selectedOutput) {
-                    thisX = vizGlyphBoundaryMap[0][0][i][0][0];
-                    thisY = vizGlyphBoundaryMap[0][0][i][0][1];
+                    thisX = nodeGlyphMap[0][0][i][0][0];
+                    thisY = nodeGlyphMap[0][0][i][0][1];
                     break;
                 }
             }
-            for (var i=0;i<activeGlyphMap[1][0].length;i++) {
-                if (activeGlyphMap[1][0][i]) {
+            for (var i=0;i<hoverGlyphMap[1].length;i++) {
+                if (hoverGlyphMap[1][i]) {
                     globalP.stroke(255,0,0);
                     globalP.strokeWeight(5);
                     globalP.noFill();
@@ -472,8 +481,8 @@ function drawConnectionProcess() {
                             thisY,
                             cp1x,cp1y,
                             cp2x,cp2y,
-                            vizGlyphBoundaryMap[1][0][i][0][0],
-                            vizGlyphBoundaryMap[1][0][i][0][1]);
+                            nodeGlyphMap[1][0][i][0][0],
+                            nodeGlyphMap[1][0][i][0][1]);
                     globalP.noStroke();
                 }
             }
@@ -482,16 +491,232 @@ function drawConnectionProcess() {
     }
 }
 
+function detectNodeClick() {
+    var thisX = 0;
+    var thisY = 0;
+    var thisRadius = 0;
+
+    for (var i=0;i<nodeGlyphMap[0].length;i++) {
+        thisX = nodeGlyphMap[0][i][0][0];
+        thisY = nodeGlyphMap[0][i][0][1];
+        thisRadius = nodeGlyphMap[0][i][0][2]/2;
+        if (mouseX<thisX+thisRadius && mouseX>thisX-thisRadius &&
+                mouseY<thisY+thisRadius && mouseY>thisY-thisRadius) {
+            descendOutputTree(i);
+            updateHoverGlyphMap();
+        }
+    }
+    for (var i=0;i<nodeGlyphMap[1].length;i++) {
+        thisX = nodeGlyphMap[1][i][0][0];
+        thisY = nodeGlyphMap[1][i][0][1];
+        thisRadius = nodeGlyphMap[1][i][0][2]/2;
+        if (mouseX<thisX+thisRadius && mouseX>thisX-thisRadius &&
+                mouseY<thisY+thisRadius && mouseY>thisY-thisRadius) {
+            descendInputTree(i);
+            updateHoverGlyphMap();
+        }
+    }
+}
+
+function detectTraversalClick() {
+    var thisX = 0;
+    var thisY = 0;
+    var thisWidth = 0;
+    var thisHeight = 0;
+
+    for (var i=0;i<traversalGlyphMap[0].length;i++) {
+        thisX = traversalGlyphMap[0][i][0][0];
+        thisY = traversalGlyphMap[0][i][0][1];
+        thisWidth = traversalGlyphMap[0][i][0][2];
+        thisHeight = traversalGlyphMap[0][i][0][3];
+        if (mouseX<thisX+thisWidth && mouseX>thisX &&
+                mouseY<thisY+thisHeight && mouseY>thisY) {
+            climbOutputTree(i);
+            updateHoverGlyphMap();
+        }
+    }
+    for (var i=0;i<traversalGlyphMap[1].length;i++) {
+        thisX = traversalGlyphMap[1][i][0][0];
+        thisY = traversalGlyphMap[1][i][0][1];
+        thisWidth = traversalGlyphMap[1][i][0][2];
+        thisHeight = traversalGlyphMap[1][i][0][3];
+        if (mouseX<thisX+thisWidth && mouseX>thisX &&
+                mouseY<thisY+thisHeight && mouseY>thisY) {
+            climbInputTree(i);
+            updateHoverGlyphMap();
+        }
+    }
+}
+
+function isOutputLeafNode(index) {
+    var outputPointer = levels[0][1];   
+    for (var i=0;i<outputVizTrace.length;i++) {
+        outputPointer = outputPointer[outputVizTrace[i]][1];
+    }
+    if (outputPointer[index] == 0) {
+        return true;
+    } else {
+        return false;
+    }
+}
+function getCurrentOutputLevelSet() {
+    var outputSet = levels[0][0];
+    var outputPointer = levels[0][1];
+    for (var i=0;i<outputVizTrace.length;i++) {
+        outputSet = outputPointer[outputVizTrace[i]][0]; 
+        outputPointer = outputPointer[outputVizTrace[i]][1];
+    }
+    return outputSet;
+}
+function descendOutputTree(index) {
+    var outputPointer = levels[0][1];
+    for (var i=0;i<outputVizTrace.length;i++) {
+        outputPointer = outputPointer[outputVizTrace[i]][1];
+    }
+
+    if (outputPointer[index] == 0) {
+        return;
+    } else {
+        outputVizTrace.push(index); 
+        outputLabelTrace.push(nodeGlyphMap[0][index][1]);
+    }
+}
+function climbOutputTree(level) {
+    if (level == 0) {
+        outputVizTrace = [];
+        outputLabelTrace = ["output signals"];
+    } else {
+        outputVizTrace = outputVizTrace.slice(0,level);   
+        outputLabelTrace = outputLabelTrace.slice(0,level+1);
+    }
+}
+function isInputLeafNode(index) {
+    var inputPointer = levels[1][1];   
+    for (var i=0;i<inputVizTrace.length;i++) {
+        inputPointer = inputPointer[inputVizTrace[i]][1];
+    }
+    if (inputPointer[index] == 0) {
+        return true;
+    } else {
+        return false;
+    }
+}
+function getCurrentInputLevelSet() {
+    var inputSet = levels[1][0];
+    var inputPointer = levels[1][1];
+    for (var i=0;i<inputVizTrace.length;i++) {
+        inputSet = inputPointer[inputVizTrace[i]][0]; 
+        inputPointer = inputPointer[inputVizTrace[i]][1];
+    }
+    return inputSet;
+}
+function descendInputTree(index) {
+    var inputPointer = levels[1][1];
+    for (var i=0;i<inputVizTrace.length;i++) {
+        inputPointer = inputPointer[inputVizTrace[i]][1];
+    }
+
+    if (inputPointer[index] == 0) {
+        return;
+    } else {
+        inputVizTrace.push(index); 
+        inputLabelTrace.push(nodeGlyphMap[1][index][1]);
+    }
+}
+function climbInputTree(level) {
+    if (level == 0) {
+        inputVizTrace = [];
+        inputLabelTrace = ["input signals"];
+    } else {
+        inputVizTrace = inputVizTrace.slice(0,level);   
+        inputLabelTrace = inputLabelTrace.slice(0,level+1);
+    }
+}
+
+function drawBackground() {
+    var xCenter = 450;
+    var yCenter = 45+(760/2);
+    var layoutRadius = 280;
+
+    globalP.noStroke();
+    globalP.fill(200,255);
+    globalP.ellipse(xCenter,yCenter,2*layoutRadius,2*layoutRadius);
+    globalP.fill(0);
+
+    xCenter = screenWidth-450;
+
+    globalP.noStroke();
+    globalP.fill(200,255);
+    globalP.ellipse(xCenter,yCenter,2*layoutRadius,2*layoutRadius);
+    globalP.fill(0);
+}
+
+function drawListGlyphs() {
+    var outputSet = getCurrentOutputLevelSet();
+    var inputSet = getCurrentInputLevelSet();
+
+    globalP.textAlign(globalP.LEFT);
+    globalP.textSize(12);
+    for (var i=0;i<outputSet.length;i++) {
+        globalP.fill(0,0,255,128);
+        if (hoverGlyphMap[0][i]) {
+            globalP.rect(0,150+(i*32),200,28);
+        }
+        globalP.fill(0);
+        globalP.text(outputSet[i],10,170+(i*32));
+    }
+    for (var i=0;i<inputSet.length;i++) {
+        globalP.fill(0,0,255,128);
+        if (hoverGlyphMap[1][i]) {
+            globalP.rect(screenWidth-200,150+(i*32),200,28);
+        }
+        globalP.fill(0);
+        globalP.text(inputSet[i],screenWidth+10-200,170+(i*32));
+    }
+}
+
+function drawTraversalGlyphs() {
+    traversalGlyphMap = [[],[]];
+
+    var xCenter = 550;
+    var yCenter = 45+(760/2);
+
+    globalP.textAlign(globalP.LEFT);
+    globalP.textSize(16);
+    for (var i=0;i<outputLabelTrace.length;i++) {
+        globalP.fill(255,0,0,128);
+        globalP.rect(xCenter+80-200,yCenter-120+(i*32),200,28);
+        globalP.fill(0);
+        globalP.text(outputLabelTrace[i],xCenter+90-200,yCenter-100+(i*32));
+        traversalGlyphMap[0].push([[xCenter+80-200,yCenter-120+(i*32),200,28],
+            outputLabelTrace[i]]);
+    }
+
+    xCenter = screenWidth-550;
+
+    for (var i=0;i<inputLabelTrace.length;i++) {
+        globalP.fill(255,0,0,128);
+        globalP.rect(xCenter-80,yCenter-120+(i*32),200,28);
+        globalP.fill(0);
+        globalP.text(inputLabelTrace[i],xCenter-70,yCenter-100+(i*32));
+        traversalGlyphMap[1].push([[xCenter-80,yCenter-120+(i*32),200,28],
+            inputLabelTrace[i]]);
+    }
+}
+
 function drawGraph() {
-    vizGlyphBoundaryMap = [[[],[],[]],[[],[],[]]];
+    nodeGlyphMap = [[],[]];
+
+    var outputSet = getCurrentOutputLevelSet();
+    var inputSet = getCurrentInputLevelSet();
 
     // outputs
     var separationAngle;
     var symbolWidth;
-    var xCenter = 450;
+    var xCenter = 550;
     var yCenter = 45+(760/2);
     var layoutRadius = 280;
-    var count = levels[0][0].length;
+    var count = outputSet.length;
     if (count > 1) {
         separationAngle = Math.PI/(count-1);
     } else {
@@ -503,17 +728,9 @@ function drawGraph() {
         var symbolWidth = (300*3.1)/count;
     }
 
-    globalP.noStroke();
-    globalP.fill(200,255);
-    globalP.ellipse(xCenter,yCenter,2*layoutRadius,2*layoutRadius);
-    globalP.fill(0);
-        
-    globalP.textSize(18);
-    globalP.textAlign(globalP.RIGHT);
-    globalP.text("output signals",xCenter,yCenter);
-
     for (var i=0;i<count;i++) {
-        layoutAngle = i*separationAngle + (Math.PI/2);
+        //layoutAngle = i*separationAngle + (Math.PI/2);
+        layoutAngle = (3*Math.PI/2) - i*separationAngle;
         if (separationAngle == 2*Math.PI) {
             var layoutX = xCenter;
             var layoutY = yCenter;
@@ -523,21 +740,27 @@ function drawGraph() {
         }
 
         globalP.noStroke();
-        if (activeGlyphMap[0][0][i]) {
+        /*
+        if (hoverGlyphMap[0][i]) {
             globalP.fill((2*16)+10,(8*16)+14,(2*16)+10);
         } else {
-            globalP.fill(127,255);
-        }
+            */
+            if (isOutputLeafNode(i)) {
+                globalP.fill(0);
+            } else {
+                globalP.fill(0,255,0);
+            }
+        //}
         if (vizDepth > 2) {
             globalP.ellipse(layoutX,layoutY,symbolWidth,symbolWidth);
         }
-        vizGlyphBoundaryMap[0][0].push([[layoutX,layoutY,symbolWidth],
-                levels[0][0][i]]);
+        nodeGlyphMap[0].push([[layoutX,layoutY,symbolWidth],
+                outputSet[i]]);
     }
 
     // inputs
-    xCenter = screenSizeX-450;
-    count = levels[1][0].length;
+    xCenter = screenWidth-550;
+    count = inputSet.length;
     if (count > 1) {
         separationAngle = Math.PI/(count-1);
     } else {
@@ -548,15 +771,6 @@ function drawGraph() {
     } else {
         var symbolWidth = (300*3.1)/count;
     }
-
-    globalP.noStroke();
-    globalP.fill(200,255);
-    globalP.ellipse(xCenter,yCenter,2*layoutRadius,2*layoutRadius);
-    globalP.fill(0);
-        
-    globalP.textSize(18);
-    globalP.textAlign(globalP.RIGHT);
-    globalP.text("output signals",xCenter,yCenter);
 
     for (var i=0;i<count;i++) {
         layoutAngle = i*separationAngle + (3*Math.PI/2);
@@ -569,214 +783,24 @@ function drawGraph() {
         }
 
         globalP.noStroke();
-        if (activeGlyphMap[1][0][i]) {
+        /*
+        if (hoverGlyphMap[1][i]) {
             globalP.fill((2*16)+10,(8*16)+14,(2*16)+10);
         } else {
-            globalP.fill(127,255);
-        }
+            */
+            if (isInputLeafNode(i)) {
+                globalP.fill(0);
+            } else {
+                globalP.fill(255,255,0);
+            }
+        //}
         if (vizDepth > 2) {
             globalP.ellipse(layoutX,layoutY,symbolWidth,symbolWidth);
         }
-        vizGlyphBoundaryMap[1][0].push([[layoutX,layoutY,symbolWidth],
-                levels[1][0][i]]);
+        nodeGlyphMap[1].push([[layoutX,layoutY,symbolWidth],
+                inputSet[i]]);
     }
 
-/*
-    // outputs then inputs
-    for (var alpha=0;alpha<levels.length;alpha++) {
-        if (levels[alpha].length == 0) {
-            return;
-        }
-
-        var innerPointer1 = 0;
-        var innerPointer0 = 0;
-
-        var count2 = levels[alpha][5].length;
-        if (count2 > 1) {
-            var separationAngle2 = Math.PI/(count2-1);
-        } else {
-            var separationAngle2 = Math.PI/(count2);
-        }
-        if (alpha == 0) {
-            var xCenter2 = 450;
-        } else {
-            var xCenter2 = screenSizeX-450;
-        }
-        if (count2 < 6) {
-            var symbolWidth2 = (300*3.1)/6;
-        } else {
-            var symbolWidth2 = (300*3.1)/count2;
-        }
-        var layoutRadius2 = 280;
-        var yCenter2 = 45+(760/2);
-
-        globalP.noStroke();
-        globalP.fill(200,255);
-        globalP.ellipse(xCenter2,yCenter2,2*layoutRadius2,2*layoutRadius2);
-        globalP.fill(0);
-        if (alpha == 0) {
-            globalP.textSize(18);
-            globalP.textAlign(globalP.RIGHT);
-            globalP.text("output signals",xCenter2,yCenter2);
-        } else {
-            globalP.textSize(18);
-            globalP.textAlign(globalP.LEFT);
-            globalP.text("input signals",xCenter2,yCenter2);
-        }
-
-        for (var i=0;i<count2;i++) {
-            if (alpha == 0) {
-                var layoutAngle2 = i*separationAngle2 + (Math.PI/2);
-            } else {
-                var layoutAngle2 = i*separationAngle2 + (3*Math.PI/2);
-            }
-            if (separationAngle2 == 2*Math.PI) {
-                var layoutX2 = xCenter2;
-                var layoutY2 = yCenter2;
-            } else {
-                var layoutX2 = xCenter2 + (layoutRadius2*Math.cos(layoutAngle2));
-                var layoutY2 = yCenter2 + (layoutRadius2*Math.sin(layoutAngle2));
-            }
-            globalP.noStroke();
-            if (activeGlyphMap[alpha][2][i]) {
-                globalP.fill((2*16)+10,(8*16)+14,(2*16)+10);
-            } else {
-                globalP.fill(127,255);
-            }
-            if (vizDepth > 2) {
-                globalP.ellipse(layoutX2,layoutY2,symbolWidth2,symbolWidth2);
-            }
-            vizGlyphBoundaryMap[alpha][2].push([[layoutX2,layoutY2,symbolWidth2],
-                    levels[alpha][4][i]]);
-
-            var count1 = levels[alpha][5][i];
-            var separationAngle1 = 2*Math.PI/count1;
-            if (count1 < 5) {
-                var symbolWidth1 = (symbolWidth2*1.5)/5;
-            } else {
-                var symbolWidth1 = (symbolWidth2*1.5)/count1;
-            }
-            var layoutRadius1 = symbolWidth2/(3.1);
-            var xCenter1 = layoutX2;
-            var yCenter1 = layoutY2;
-            for (var j=0;j<count1;j++) {
-                var layoutAngle1 = j*separationAngle1 + (Math.PI/2);
-                if (separationAngle1 == 2*Math.PI) {
-                    var layoutX1 = xCenter1;
-                    var layoutY1 = yCenter1;
-                } else {
-                    var layoutX1 = xCenter1 + (layoutRadius1*Math.cos(layoutAngle1));
-                    var layoutY1 = yCenter1 + (layoutRadius1*Math.sin(layoutAngle1));
-                }
-                if (activeGlyphMap[alpha][1][innerPointer1+j]) {
-                    globalP.fill((13*16)+11,(3*16)+3,(3*16)+3);
-                } else {
-                    globalP.fill(255,255);
-                }
-                if (vizDepth > 1) {
-                    globalP.ellipse(layoutX1,layoutY1,symbolWidth1,symbolWidth1);
-                }
-                vizGlyphBoundaryMap[alpha][1].push([[layoutX1,layoutY1,symbolWidth1],
-                        levels[alpha][2][innerPointer1+j]]);
-
-                var count0 = levels[alpha][3][innerPointer1+j];
-                var separationAngle0 = 2*Math.PI/count0;
-                //var symbolWidth0 = 20;
-                if (count0 < 5) {
-                    var symbolWidth0 = (symbolWidth1*1.5)/5;
-                } else {
-                    var symbolWidth0 = (symbolWidth1*1.5)/count0;
-                }
-                //var layoutRadius0 = 18;
-                var layoutRadius0 = symbolWidth1/(3.1);
-                var xCenter0 = layoutX1;
-                var yCenter0 = layoutY1;
-                for (var k=0;k<count0;k++) {
-                    var layoutAngle0 = k*separationAngle0 + (Math.PI/2);
-                    if (separationAngle0 == 2*Math.PI) {
-                        var layoutX0 = xCenter0;
-                        var layoutY0 = yCenter0;
-                    } else {
-                        var layoutX0 = xCenter0 + (layoutRadius0*Math.cos(layoutAngle0));
-                        var layoutY0 = yCenter0 + (layoutRadius0*Math.sin(layoutAngle0));
-                    }
-                    if (activeGlyphMap[alpha][0][innerPointer0+k]) {
-                        globalP.fill((3*16)+3,(3*16)+3,(13*16)+11);
-                    } else {
-                        globalP.fill(0,255);
-                    }
-                    globalP.ellipse(layoutX0,layoutY0,symbolWidth0,symbolWidth0);
-                    vizGlyphBoundaryMap[alpha][0].push([[layoutX0,layoutY0,symbolWidth0],
-                            levels[alpha][0][innerPointer0+k]]);
-                }
-
-                innerPointer0 += count0;
-            }
-
-            innerPointer1 += count1;
-        }
-    }
-    */
-
-/*
-    // draw mappings
-    mappingVizMap = [[],[]];
-    var cp1x = 450;
-    var cp1y = 45+(760/2);
-    var cp2x = screenSizeX-450;
-    var cp2y = 45+(760/2);
-    // gather coordinates
-    for (var i=0;i<filterMatches[2].length;i++) {
-        if (filterMatches[2][i] == 0) {
-            continue;
-        }	
-
-        // starting point
-        for (var j=0;j<vizGlyphBoundaryMap[0][0].length;j++) {
-            var thisString = "";
-            for (var k=vizGlyphBoundaryMap[0][0][j][1].length-1;k>=0;k--) {
-                thisString += "/"+vizGlyphBoundaryMap[0][0][j][1][k];
-            }
-            if (thisString == filterMatches[2][i].output[2]) {
-                mappingVizMap[0].push([thisString,
-                        vizGlyphBoundaryMap[0][0][j][0][0],
-                        vizGlyphBoundaryMap[0][0][j][0][1],
-                        cp1x,cp1y]);
-            }
-        }
-        // ending point
-        for (var j=0;j<vizGlyphBoundaryMap[1][0].length;j++) {
-            thisString = "";
-            for (var k=vizGlyphBoundaryMap[1][0][j][1].length-1;k>=0;k--) {
-                thisString += "/"+vizGlyphBoundaryMap[1][0][j][1][k];
-            }
-            if (thisString == filterMatches[2][i].input[2]) {
-                mappingVizMap[1].push([thisString,
-                        vizGlyphBoundaryMap[1][0][j][0][0],
-                        vizGlyphBoundaryMap[1][0][j][0][1],
-                        cp2x,cp2y]);
-            }
-        }
-    }
-    // paint bezier curves
-    for (var i=0;i<mappingVizMap[0].length;i++) {
-        if (activeGlyphMap[2][i]) {
-            globalP.stroke(255,0,0);
-        } else {
-            globalP.stroke(0);
-        }
-        globalP.strokeWeight(5);
-        globalP.noFill();
-        globalP.bezier(mappingVizMap[0][i][1],
-                mappingVizMap[0][i][2],
-                cp1x,cp1y,
-                cp2x,cp2y,
-                mappingVizMap[1][i][1],
-                mappingVizMap[1][i][2]);
-        globalP.noStroke();
-
-    }
-    */
 }
 
 function drawList() {
@@ -803,7 +827,6 @@ function drawList() {
 
         globalP.fill(255,0,0,255);
         globalP.textSize(18);
-        //globalP.text(executionFeedbackString,280,70);
 
         if (tables[0].length > numberOfItemsPerPage) {
             globalP.textSize(textSize);
@@ -840,7 +863,7 @@ function drawList() {
         var xPos = leftBound;
         var yPos = topBound;
 
-        numberOfItemsPerPage = Math.ceil((screenSizeY-80-topBound)/lineSpacing) + 1;
+        numberOfItemsPerPage = Math.ceil((screenHeight-80-topBound)/lineSpacing) + 1;
 
         globalP.fill(200);
         if (tables != null) {
@@ -863,7 +886,7 @@ function drawList() {
                 globalP.text(tables[0][i][5].toString(),
                         xPos+bigColumnSpacing+(4*littleColumnSpacing),
                         yPos);
-                if (yPos+80 > screenSizeY) {
+                if (yPos+80 > screenHeight) {
                     break;
                 } else {
                     yPos += lineSpacing;
@@ -875,9 +898,7 @@ function drawList() {
         globalP.textSize(textSize);
         globalP.textAlign(globalP.LEFT);
         globalP.text("expression",leftBound,126);
-        //globalP.fill(255,0,0);
         globalP.text("output",leftBound+bigColumnSpacing,126);
-        //globalP.fill(0,0,255);
         globalP.text("input",leftBound+bigColumnSpacing+bigColumnSpacing,126);
         globalP.fill(0);
         //globalP.text("range",leftBound+bigColumnSpacing+(2*bigColumnSpacing),126);
@@ -933,7 +954,7 @@ function drawList() {
                 //globalP.text("["+tables[1][i].range[0]+","+tables[1][i].range[1]+"]"+"-"+"["+tables[1][i].range[2]+","+tables[1][i].range[3]+"]",
                 //		xPos+(3*bigColumnSpacing),
                 //		yPos);
-                if (yPos+80 > screenSizeY) {
+                if (yPos+80 > screenHeight) {
                     break;
                 } else {
                     yPos += lineSpacing;
@@ -952,11 +973,11 @@ function drawList() {
 
 function drawRaw() {
     if ($('#signalsTab').hasClass('active')) {
-        $('#rawText').text(JSON.stringify(jsonNetworkBase,null,'\t'));
+        $('#rawText').text(JSON.stringify(liveJSONBase,null,'\t'));
         $('#signalsFile').toggle(true);
         $('#mappingsFile').toggle(false);
     } else {
-        $('#rawText').text(JSON.stringify(jsonMappingBase,null,'\t'));
+        $('#rawText').text(JSON.stringify(liveJSONBase,null,'\t'));
         $('#signalsFile').toggle(false);
         $('#mappingsFile').toggle(true);
     }
@@ -1081,13 +1102,13 @@ $(document).ready(function() {
 		$.getJSON('/data/testerNetwork.json', function(data) {
 			indexNetworkData(data);
 			updateActiveFilter();
-            updateLayout();
+            updateLevelStructure();
 			//activateListMode();
 		});
 		$.getJSON('/data/testerMapping.json', function(data) {
 			indexMappingData(data);
 			updateActiveFilter();
-            updateLayout();
+            updateLevelStructure();
 		});
         */
 
@@ -1200,7 +1221,7 @@ $(document).ready(function() {
 		$('#filterInput').keyup(function(event) {
 			event.preventDefault();
 			updateActiveFilter();
-            //updateLayout();
+            //updateLevelStructure();
 		});
 		/*
 		$('#executeInput').keydown(function(event) {
@@ -1229,35 +1250,27 @@ function main()
     command.register("all_devices", function(cmd, args) {
         for (d in args)
             devices.add(args[d].name, args[d]);
-        //update_display();
     });
     command.register("new_device", function(cmd, args) {
         devices.add(args.name, args);
-        //update_display();
     });
     command.register("del_device", function(cmd, args) {
         devices.remove(args.name);
-        //update_display();
     });
 
     command.register("all_signals", function(cmd, args) {
         for (d in args)
             signals.add(args[d].name, args[d]);
-        //update_display();
     });
     command.register("new_signal", function(cmd, args) {
         signals.add(args.name, args);
-        //update_display();
     });
     command.register("del_signal", function(cmd, args) {
         signals.remove(args.name);
-        //update_display();
     });
 
-	//add_display_tables();
 	command.start();
-	//command.send('all_devices');
-	//command.send('all_signals');
+
     // Delay starting polling, because it results in a spinning wait
     // cursor in the browser.
     setTimeout(
@@ -1358,11 +1371,6 @@ function updateActiveFilter() {
 		compoundQuery[2] = [["/"]];
 	}
 
-    updateSignalMatches();
-    updateLayout();
-    updateGlyphMap();
-
-
 /*
 	// gather mappings that pertain to filtered signals
 	filterMatches[2] = [];
@@ -1388,7 +1396,7 @@ function updateActiveFilter() {
 	for (var i=0;i<filterMatches[2].length;i++) {
 		if (filterMatches[2][i]) {
 			tables[1].push(filterMatches[2][i]);
-			activeGlyphMap[2].push(false);
+			hoverGlyphMap[2].push(false);
 		}
 	}
     */
@@ -1399,16 +1407,29 @@ function updateActiveFilter() {
 	//$('#filterText').html(highlightedFilter);
 }
 
-function updateGlyphMap() {
+function updateHoverGlyphMap() {
 
-    activeGlyphMap = [[[],[],[]],[[],[],[]],[]]; // outputs(outer,middle,inner),inputs(outer,middle,inner),connections
+    hoverGlyphMap = [[],[]]; // outputs,inputs
 
-	for (var i=0;i<levels[0][0].length;i++) {
-		activeGlyphMap[0][0].push(false);
-	}
-	for (var i=0;i<levels[1][0].length;i++) {
-		activeGlyphMap[1][0].push(false);
-	}
+    if (outputVizTrace.length == 0) {
+        for (var i=0;i<levels[0][0].length;i++) {
+            hoverGlyphMap[0].push(false);
+        }
+    } else if (outputVizTrace.length == 1) {
+        for (var i=0;i<levels[0][1][outputVizTrace[0]][0].length;i++) {
+            hoverGlyphMap[0].push(false);
+        }
+    }
+
+    if (inputVizTrace.length == 0) {
+        for (var i=0;i<levels[1][0].length;i++) {
+            hoverGlyphMap[1].push(false);
+        }
+    } else if (inputVizTrace.length == 1) {
+        for (var i=0;i<levels[1][1][inputVizTrace[0]][0].length;i++) {
+            hoverGlyphMap[1].push(false);
+        }
+    }
 
 }
 
@@ -1436,12 +1457,11 @@ function updateSignalMatches() {
 }
 
 var preLevels = [[],[]];
-var levels = [[],[]];
 var filterMatches = [[],[],[]];
 var preLevels = [[],[]];
-var levels = [[],[]];
-function updateLayout() {
-    levels = [[],[]];
+var levels = [[[]],[[]]];
+function updateLevelStructure() {
+    levels = [[[]],[[]]];
 
 	//inputs
 	filterMatches[0].sort();
@@ -1471,45 +1491,6 @@ function updateLayout() {
     levels[1] = levels[1].cluster(0);
 }
 
-//inputs+outputs
-/*
-var test_preLevels_1 = [[],[]];
-var test_levels_1 = [[],[]];
-var test_filterMatches = [[],[],[]];
-function testLayout() {
-    test_levels_1 = [[],[]];
-
-	//inputs
-	test_filterMatches[0].sort();
-	for (var i=0;i<test_filterMatches[0].length;i++) {
-        test_levels_1[0].push([test_filterMatches[0][i][0]]);  
-
-		var splitArray = test_filterMatches[0][i][1].split("/");
-		for (var j=1;j<splitArray.length;j++) {
-            test_levels_1[0][test_levels_1[0].length-1].push(splitArray[j]);
-		}
-	}
-	test_preLevels_1[0] = test_levels_1[0];
-    test_levels_1[0] = test_levels_1[0].cluster(0);
-	//test_levels_1[0] = test_levels_1[0].unique();
-
-
-	//outputs
-	test_filterMatches[1].sort();
-	for (var i=0;i<test_filterMatches[1].length;i++) {
-        test_levels_1[1].push([test_filterMatches[1][i][0]]);
-
-		var splitArray = test_filterMatches[1][i][1].split("/");
-		for (var j=1;j<splitArray.length;j++) {
-            test_levels_1[1][test_levels_1[1].length-1].push(splitArray[j]);
-		}
-	}
-    test_preLevels_1[1] = test_levels_1[1];
-    test_levels_1[1] = test_levels_1[1].cluster(0);
-	//test_levels_1[1] = test_levels_1[1].unique();
-}
-*/
-
 Array.prototype.cluster = function(depth) {
 	var labels_1 = new Array();
     var clusters_1 = new Array();
@@ -1537,57 +1518,6 @@ Array.prototype.cluster = function(depth) {
 
     return [labels_1,clusters_1];
 }
-
-
-Array.prototype.unique = function() {
-	var count0 = new Array();
-	var count1 = new Array();
-	var count2 = new Array();
-	var r0 = new Array();
-	var r1 = new Array();
-	var r2 = new Array();
-
-	o: for (var i=0,n=this.length;i<n;i++) {
-		for (var x=0,y=r0.length;x<y;x++) {
-			if (r0[x].toString()==this[i].toString()) {
-				count0[x]++;
-				continue o;
-			}
-		}
-		count0[r0.length] = 1;
-		r0[r0.length] = this[i];
-	}
-	p: for (var i=0,n=r0.length;i<n;i++) {
-		for (var x=0,y=r1.length;x<y;x++) {
-			if (r1[x].slice(1).toString()==r0[i].slice(1).toString()) {
-				count1[x]++;
-				continue p;
-			}
-		}
-		count1[r1.length] = 1;
-		r1[r1.length] = r0[i];
-	}
-	q: for (var i=0,n=r1.length;i<n;i++) {
-		for (var x=0,y=r2.length;x<y;x++) {
-			if (r1[i].length > 2) {
-				if (r2[x].slice(2).toString()==r1[i].slice(2).toString()) {
-					count2[x]++;
-					continue q;
-				}
-			} else {
-				if (r2[x].slice(1).toString()==r1[i].slice(1).toString()) {
-					count2[x]++;
-					continue q;
-				}
-			}
-		}
-		count2[r2.length] = 1;
-		r2[r2.length] = r1[i];
-	}
-
-	return [r0,count0,r1,count1,r2,count2];
-}
-
 
 var liveJSONBase;
 var masterLiveIndex = [];

@@ -217,7 +217,7 @@ function globalP(p) {
 	p.draw = function() {
 
 		if (!drawCounter) {
-            //updateActiveFilter();
+            updateActiveFilter();
             updateSignalMatches();
             updateLevelStructure();
             updateHoverGlyphMap();
@@ -640,7 +640,7 @@ function climbInputTree(level) {
 }
 
 function drawBackground() {
-    var xCenter = 450;
+    var xCenter = 550;
     var yCenter = 45+(760/2);
     var layoutRadius = 280;
 
@@ -649,7 +649,7 @@ function drawBackground() {
     globalP.ellipse(xCenter,yCenter,2*layoutRadius,2*layoutRadius);
     globalP.fill(0);
 
-    xCenter = screenWidth-450;
+    xCenter = screenWidth-550;
 
     globalP.noStroke();
     globalP.fill(200,255);
@@ -1367,6 +1367,7 @@ function updateActiveFilter() {
 	/*
 		debug matching
 	 */
+     /*
 	if (activeFilter.match(new RegExp("!\\w+(!\\w+|)*","ig")) == null) {
 		debugQuery = [""];
 	} else {
@@ -1388,6 +1389,7 @@ function updateActiveFilter() {
 			debugMode = 0;
 		}
 	}
+    */
 
 
 
@@ -1487,33 +1489,21 @@ function updateSignalMatches() {
 	filterMatches = [[],[],[]];
 	tables = [[],[]];
 
-/*
-	for (var i=0;i<masterNetworkIndex.length;i++) {
-		o: for (var j=0;j<compoundQuery[0].length;j++) {
-			//namespace
-			for (var k=0;k<compoundQuery[2][j].length;k++) { 
-				if (masterNetworkIndex[i][0].match(new RegExp(compoundQuery[2][j][k].slice(1),"ig")) == null) {
-					continue o;
-				}
-			}
-
-			if (masterNetworkIndex[i][5][1] == "output") {	
-                filterMatches[0].push([masterNetworkIndex[i][5][0],masterNetworkIndex[i][0]]);
-            } else if (masterNetworkIndex[i][5][1] == "input") {	
-                filterMatches[1].push([masterNetworkIndex[i][5][0],masterNetworkIndex[i][0]]);
-            }
-			tables[0].push(masterNetworkIndex[i]);
-		}
-	}
-    */
     var keys = signals.keys();
     for (var i=0;i<keys.length;i++) {
-        if (signals.get(keys[i]).direction  == 1) {	
-            filterMatches[0].push([signals.get(keys[i]).device_name,signals.get(keys[i]).name]);
-        } else if (signals.get(keys[i]).direction == 0) {	
-            filterMatches[1].push([signals.get(keys[i]).device_name,signals.get(keys[i]).name]);
+		o: for (var j=0;j<compoundQuery[0].length;j++) {
+               //namespace matching
+               if (keys[i].match(new RegExp(compoundQuery[0][j].slice(1),"ig")) == null) {
+                   continue o;
+               }
+
+               if (signals.get(keys[i]).direction  == 1) {	
+                   filterMatches[0].push([signals.get(keys[i]).device_name,signals.get(keys[i]).name]);
+               } else if (signals.get(keys[i]).direction == 0) {	
+                   filterMatches[1].push([signals.get(keys[i]).device_name,signals.get(keys[i]).name]);
+               }
+               //tables[0].push(masterNetworkIndex[i]);
         }
-        //tables[0].push(masterNetworkIndex[i]);
     }
 }
 

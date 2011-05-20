@@ -217,6 +217,11 @@ function globalP(p) {
 	p.draw = function() {
 
 		if (!drawCounter) {
+            //updateActiveFilter();
+            updateSignalMatches();
+            updateLevelStructure();
+            updateHoverGlyphMap();
+            /*
 			$.getJSON('/data/live.json', function(data) {
 					indexLiveData(data);
 					updateActiveFilter();
@@ -224,6 +229,7 @@ function globalP(p) {
                     updateLevelStructure();
                     updateHoverGlyphMap();
 					});
+            */
 		}
 
 		if ($('#graphTab').hasClass('active')) {
@@ -1244,6 +1250,11 @@ $(document).ready(function() {
 		main();
 });
 
+devices = new Assoc();
+signals = new Assoc();
+links = new Assoc();
+connections = new Assoc();
+
 /* The main program. */
 function main()
 {
@@ -1260,13 +1271,50 @@ function main()
 
     command.register("all_signals", function(cmd, args) {
         for (d in args)
-            signals.add(args[d].name, args[d]);
+            signals.add(args[d].device_name+args[d].name, args[d]);
     });
     command.register("new_signal", function(cmd, args) {
-        signals.add(args.name, args);
+        signals.add(args.device_name+args.name, args);
     });
     command.register("del_signal", function(cmd, args) {
-        signals.remove(args.name);
+        signals.remove(args.device_name+args.name);
+    });
+
+    command.register("all_links", function(cmd, args) {
+        for (l in args)
+            links.add(args[l].src_name+'>'+args[l].dest_name,
+                      args[l]);
+    });
+    command.register("new_link", function(cmd, args) {
+        links.add(args.src_name+'>'+args.dest_name, args);
+    });
+    command.register("del_link", function(cmd, args) {
+        links.remove(args.src_name+'>'+args.dest_name);
+    });
+
+    command.register("all_connections", function(cmd, args) {
+        for (d in args)
+            connections.add(args[d].src_name+'>'+args[d].dest_name,
+                            args[d]);
+        //update_display();
+        /*
+        for (d in args)
+            update_connection_properties_for(args[d],
+                                             get_selected(connections));
+            */
+    });
+    command.register("new_connection", function(cmd, args) {
+        connections.add(args.src_name+'>'+args.dest_name, args);
+        //update_connection_properties_for(args, get_selected(connections));
+    });
+    command.register("mod_connection", function(cmd, args) {
+        connections.add(args.src_name+'>'+args.dest_name, args);
+        //update_connection_properties_for(args, get_selected(connections));
+    });
+    command.register("del_connection", function(cmd, args) {
+        var conns = get_selected(connections);
+        connections.remove(args.src_name+'>'+args.dest_name);
+        //update_connection_properties_for(args, conns);
     });
 
 	command.start();
@@ -1277,6 +1325,8 @@ function main()
         function(){
             command.send('all_devices');
             command.send('all_signals');
+            command.send('all_links');
+            command.send('all_connections');
 			},
         100);
 }
@@ -1437,6 +1487,7 @@ function updateSignalMatches() {
 	filterMatches = [[],[],[]];
 	tables = [[],[]];
 
+/*
 	for (var i=0;i<masterNetworkIndex.length;i++) {
 		o: for (var j=0;j<compoundQuery[0].length;j++) {
 			//namespace
@@ -1454,6 +1505,16 @@ function updateSignalMatches() {
 			tables[0].push(masterNetworkIndex[i]);
 		}
 	}
+    */
+    var keys = signals.keys();
+    for (var i=0;i<keys.length;i++) {
+        if (signals.get(keys[i]).direction  == 1) {	
+            filterMatches[0].push([signals.get(keys[i]).device_name,signals.get(keys[i]).name]);
+        } else if (signals.get(keys[i]).direction == 0) {	
+            filterMatches[1].push([signals.get(keys[i]).device_name,signals.get(keys[i]).name]);
+        }
+        //tables[0].push(masterNetworkIndex[i]);
+    }
 }
 
 var preLevels = [[],[]];

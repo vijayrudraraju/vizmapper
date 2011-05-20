@@ -14,9 +14,11 @@ from cStringIO import StringIO
 
 import os
 
+'''
 print os.getcwd()
 file_path = os.getcwd()+'/data/live.json'
 live_file = open(file_path,'w')
+'''
 
 html_file_path = os.getcwd()+'/html/processingMapper.html'
 
@@ -154,11 +156,12 @@ def handler_wait_command(out, args):
     print >>out, json.dumps( {"id": int(args['id']),
                               "cmd": msg[0],
                               "args": msg[1]} )
-
+'''
     if 'device_name' in msg[1]:
         live_file_cache.append(msg[1])
     live_file = open(file_path,'w')
     live_file.write(json.dumps(live_file_cache,indent=4))
+'''
 
 def handler_send_command(out, args):
     try:

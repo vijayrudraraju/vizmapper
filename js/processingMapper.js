@@ -81,7 +81,7 @@ var mouseY = globalP.mouseY;
 var drawCounter = 0;
 
 var outputBranchTrace = [];
-var inputVizTrace = [];
+var inputBranchTrace = [];
 var outputLabelTrace = ["output signals"];
 var inputLabelTrace = ["input signals"];
 
@@ -244,10 +244,12 @@ function globalP(p) {
 			p.background(207);
             drawBackground();
             //console.log("draw background done");
+            updateNodeGlyphMap();
+            updateHoverState();
+
             drawNodes();
             drawEdges();
             //console.log("draw edges done");
-            updateHoverState();
             //console.log("update hover state done");
             drawListGlyphs();
             //console.log("update list glyphs done");
@@ -279,10 +281,138 @@ function globalP(p) {
 	};
 }
 
+function updateNodeGlyphMap() {
+    nodeGlyphMap = {outputs:new Assoc(), inputs:new Assoc()};
+
+    var outputSet = getCurrentOutputLevelSet();
+    var inputSet = getCurrentInputLevelSet();
+
+    var outputChildSet = getNumberOfChildNodesForOutputLevel();
+    var inputChildSet = getNumberOfChildNodesForInputLevel();
+
+    // outputs
+    var centerX = 550;
+    var centerY = 45+(760/2);
+
+    var count = outputSet.length;
+
+    var separationAngle;
+    if (count > 1) {
+        separationAngle = Math.PI/(count-1);
+    } else {
+        separationAngle = Math.PI/(count);
+    }
+
+    var layoutAngle;
+
+    var layoutX;
+    var layoutY;
+    var symbolWidth;
+    if (count <= 6) {
+        symbolWidth = 700/6;
+    } else {
+        symbolWidth = (700*Math.PI)/(2*( (Math.PI/Math.sin(Math.PI/(count-1))) + (Math.PI/2) ));
+    }
+    var layoutRadius = (700/2)-(symbolWidth/2);
+
+    for (var i=0;i<count;i++) {
+        layoutAngle = (3*Math.PI/2) - i*separationAngle;
+
+        layoutX = centerX + (layoutRadius*Math.cos(layoutAngle));
+        layoutY = centerY + (layoutRadius*Math.sin(layoutAngle));
+
+        var count2 = outputChildSet[i].numGroups+outputChildSet[i].numSignals;
+
+        var separationAngle2;
+        if (count2 > 1) {
+            separationAngle2 = Math.PI/(count2-1);
+        } else {
+            separationAngle2 = Math.PI/(count2);
+        }
+
+        var layoutAngle2;
+
+        var layoutX2;
+        var layoutY2;
+        var symbolWidth2;
+        if (count2 < 6) {
+            symbolWidth2 = symbolWidth/6;
+        } else {
+            symbolWidth2 = (symbolWidth*Math.PI)/(2*( (Math.PI/Math.sin(Math.PI/(count2-1))) + (Math.PI/2) ));
+        }
+        var layoutRadius2 = (symbolWidth/2)-(symbolWidth2/2);
+
+        var subNodes = [];
+        for (var j=0;j<count2;j++) {
+            layoutAngle2 = (3*Math.PI/2) - j*separationAngle2;
+            layoutX2 = layoutX + (layoutRadius2*Math.cos(layoutAngle2));
+            layoutY2 = layoutY + (layoutRadius2*Math.sin(layoutAngle2));
+            subNodes.push({layoutX:layoutX2,layoutY:layoutY2,symbolWidth:symbolWidth2});
+        }
+
+        nodeGlyphMap.outputs.add(outputSet[i], {layoutX:layoutX,layoutY:layoutY,symbolWidth:symbolWidth,mouseOver:false,numSignals:outputChildSet[i].numSignals,numGroups:outputChildSet[i].numGroups,subNodes:subNodes});
+    }
+
+    // inputs
+    centerX = screenWidth-550;
+
+    count = inputSet.length;
+
+    if (count > 1) {
+        separationAngle = Math.PI/(count-1);
+    } else {
+        separationAngle = Math.PI/(count);
+    }
+
+    if (count <= 6) {
+        symbolWidth = 700/6;
+    } else {
+        symbolWidth = (700*Math.PI)/(2*( (Math.PI/Math.sin(Math.PI/(count-1))) + (Math.PI/2) ));
+    }
+    layoutRadius = (700/2)-(symbolWidth/2);
+
+    for (var i=0;i<count;i++) {
+        layoutAngle = i*separationAngle + (3*Math.PI/2);
+
+        layoutX = centerX + (layoutRadius*Math.cos(layoutAngle));
+        layoutY = centerY + (layoutRadius*Math.sin(layoutAngle));
+
+        var count2 = inputChildSet[i].numGroups+inputChildSet[i].numSignals;
+
+        var separationAngle2;
+        if (count2 > 1) {
+            separationAngle2 = Math.PI/(count2-1);
+        } else {
+            separationAngle2 = Math.PI/(count2);
+        }
+
+        var layoutAngle2;
+
+        var layoutX2;
+        var layoutY2;
+        var symbolWidth2;
+        if (count2 <= 6) {
+            symbolWidth2 = symbolWidth/6;
+        } else {
+            symbolWidth2 = (symbolWidth*Math.PI)/(2*( (Math.PI/Math.sin(Math.PI/(count2-1))) + (Math.PI/2) ));
+        }
+        var layoutRadius2 = (symbolWidth/2)-(symbolWidth2/2);
+
+        var subNodes = [];
+        for (var j=0;j<count2;j++) {
+            layoutAngle2 = j*separationAngle2 + (3*Math.PI/2);
+            layoutX2 = layoutX + (layoutRadius2*Math.cos(layoutAngle2));
+            layoutY2 = layoutY + (layoutRadius2*Math.sin(layoutAngle2));
+            subNodes.push({layoutX:layoutX2,layoutY:layoutY2,symbolWidth:symbolWidth2});
+        }
+
+        nodeGlyphMap.inputs.add(inputSet[i], {layoutX:layoutX,layoutY:layoutY,symbolWidth:symbolWidth,mouseOver:false,numSignals:inputChildSet[i].numSignals,numGroups:inputChildSet[i].numGroups,subNodes:subNodes});
+    }
+
+}
 
 function updateHoverState() {
-    // hover detection of outputs and inputs
-    // this is the dumb way of doing this
+    // hover detection of source nodes and destination nodes 
     if ($('#graphTab').hasClass('active')) {
         var thisX = 0; // input,level,container,drawingNumbers,thisX
         var thisY = 0;
@@ -293,8 +423,9 @@ function updateHoverState() {
             thisX = nodeGlyphMap.outputs.get(keys[i]).layoutX;
             thisY = nodeGlyphMap.outputs.get(keys[i]).layoutY;
             thisRadius = nodeGlyphMap.outputs.get(keys[i]).symbolWidth/2;
-            if (mouseX<thisX+thisRadius && mouseX>thisX-thisRadius &&
-                    mouseY<thisY+thisRadius && mouseY>thisY-thisRadius) {
+
+            // is the mouse within the bounds of the node glyph?
+            if (Math.pow(mouseX-thisX,2)+Math.pow(mouseY-thisY,2) < Math.pow(thisRadius,2)) {
                 nodeGlyphMap.outputs.get(keys[i]).mouseOver = true;
             } else {
                 nodeGlyphMap.outputs.get(keys[i]).mouseOver = false;
@@ -305,8 +436,9 @@ function updateHoverState() {
             thisX = nodeGlyphMap.inputs.get(keys[i]).layoutX;
             thisY = nodeGlyphMap.inputs.get(keys[i]).layoutY;
             thisRadius = nodeGlyphMap.inputs.get(keys[i]).symbolWidth/2;
-            if (mouseX<thisX+thisRadius && mouseX>thisX-thisRadius &&
-                    mouseY<thisY+thisRadius && mouseY>thisY-thisRadius) {
+
+            // is the mouse within the bounds of the node glyph?
+            if (Math.pow(mouseX-thisX,2)+Math.pow(mouseY-thisY,2) < Math.pow(thisRadius,2)) {
                 nodeGlyphMap.inputs.get(keys[i]).mouseOver = true;
             } else {
                 nodeGlyphMap.inputs.get(keys[i]).mouseOver = false;
@@ -579,14 +711,28 @@ function isOutputLeafNode(index) {
         return false;
     }
 }
-function getNumberOfChildNodesForLevel() {
+function getNumberOfChildNodesForOutputLevel() {
     var numbers = [];
     var outputPointer = levels[0][1];
+
     for (var i=0;i<outputBranchTrace.length;i++) {
         outputPointer = outputPointer[outputBranchTrace[i]][1];
     }
+    var numSignals = 0;
+    var numGroups = 0;
     for (var i=0;i<outputPointer.length;i++) {
-        numbers.push(outputPointer[i][0].length); 
+        if (outputPointer[i] != 0) {
+            for (var j=0;j<outputPointer[i][1].length;j++) {
+                if (outputPointer[i][1][j] == 0) {
+                    numSignals++;
+                } else {
+                    numGroups++;
+                }
+            }
+        }
+        numbers.push({numSignals:numSignals,numGroups:numGroups}); 
+        numSignals = 0;
+        numGroups = 0;
     }
     return numbers;
 }
@@ -656,8 +802,8 @@ function climbOutputTree(level) {
 }
 function isInputLeafNode(index) {
     var inputPointer = levels[1][1];   
-    for (var i=0;i<inputVizTrace.length;i++) {
-        inputPointer = inputPointer[inputVizTrace[i]][1];
+    for (var i=0;i<inputBranchTrace.length;i++) {
+        inputPointer = inputPointer[inputBranchTrace[i]][1];
     }
     if (inputPointer[index] == 0) {
         return true;
@@ -665,12 +811,36 @@ function isInputLeafNode(index) {
         return false;
     }
 }
+function getNumberOfChildNodesForInputLevel() {
+    var numbers = [];
+    var inputPointer = levels[1][1];
+    for (var i=0;i<inputBranchTrace.length;i++) {
+        inputPointer = inputPointer[inputBranchTrace[i]][1];
+    }
+    var numSignals = 0;
+    var numGroups = 0;
+    for (var i=0;i<inputPointer.length;i++) {
+        if (inputPointer[i] != 0) {
+            for (var j=0;j<inputPointer[i][1].length;j++) {
+                if (inputPointer[i][1][j] == 0) {
+                    numSignals++;
+                } else {
+                    numGroups++;
+                }
+            }
+        }
+        numbers.push({numSignals:numSignals,numGroups:numGroups}); 
+        numSignals = 0;
+        numGroups = 0;
+    }
+    return numbers;
+}
 function getCurrentInputLevelSet() {
     var inputSet = levels[1][0];
     var inputPointer = levels[1][1];
-    for (var i=0;i<inputVizTrace.length;i++) {
-        inputSet = inputPointer[inputVizTrace[i]][0]; 
-        inputPointer = inputPointer[inputVizTrace[i]][1];
+    for (var i=0;i<inputBranchTrace.length;i++) {
+        inputSet = inputPointer[inputBranchTrace[i]][0]; 
+        inputPointer = inputPointer[inputBranchTrace[i]][1];
     }
     inputSet = inputSet.slice();
     return inputSet;
@@ -698,9 +868,9 @@ function getCurrentInputPaths() {
 function descendInputTree(key) {
     var keyPointer = levels[1][0];
     var inputPointer = levels[1][1];
-    for (var i=0;i<inputVizTrace.length;i++) {
-        keyPointer = inputPointer[inputVizTrace[i]][0];
-        inputPointer = inputPointer[inputVizTrace[i]][1];
+    for (var i=0;i<inputBranchTrace.length;i++) {
+        keyPointer = inputPointer[inputBranchTrace[i]][0];
+        inputPointer = inputPointer[inputBranchTrace[i]][1];
     }
 
     var index = 0;
@@ -712,35 +882,35 @@ function descendInputTree(key) {
     if (inputPointer[index] == 0) {
         return;
     } else {
-        inputVizTrace.push(index); 
+        inputBranchTrace.push(index); 
         inputLabelTrace.push(key);
     }
 }
 function climbInputTree(level) {
     if (level == 0) {
-        inputVizTrace = [];
+        inputBranchTrace = [];
         inputLabelTrace = ["input signals"];
     } else {
-        inputVizTrace = inputVizTrace.slice(0,level);   
+        inputBranchTrace = inputBranchTrace.slice(0,level);   
         inputLabelTrace = inputLabelTrace.slice(0,level+1);
     }
 }
 
 function drawBackground() {
-    var xCenter = 550;
-    var yCenter = 45+(760/2);
-    var layoutRadius = 280;
+    var centerX = 550;
+    var centerY = 45+(760/2);
+    var backgroundWidth = 700;
 
     globalP.noStroke();
     globalP.fill(200,255);
-    globalP.ellipse(xCenter,yCenter,2*layoutRadius,2*layoutRadius);
+    globalP.ellipse(centerX,centerY,backgroundWidth,backgroundWidth);
     globalP.fill(0);
 
-    xCenter = screenWidth-550;
+    centerX = screenWidth-550;
 
     globalP.noStroke();
     globalP.fill(200,255);
-    globalP.ellipse(xCenter,yCenter,2*layoutRadius,2*layoutRadius);
+    globalP.ellipse(centerX,centerY,backgroundWidth,backgroundWidth);
     globalP.fill(0);
 }
 
@@ -782,104 +952,184 @@ function drawListGlyphs() {
 function drawTraversalGlyphs() {
     traversalGlyphMap = [[],[]];
 
-    var xCenter = 550;
-    var yCenter = 45+(760/2);
+    var centerX = 550;
+    var centerY = 45+(760/2);
 
     globalP.textAlign(globalP.LEFT);
     globalP.textSize(16);
     globalP.noStroke();
     for (var i=0;i<outputLabelTrace.length;i++) {
         globalP.fill(255,0,0,128);
-        globalP.rect(xCenter+80-200,yCenter-120+(i*32),200,28);
+        globalP.rect(centerX+80-200,centerY-120+(i*32),200,28);
         globalP.fill(0);
-        globalP.text(outputLabelTrace[i],xCenter+90-200,yCenter-100+(i*32));
-        traversalGlyphMap[0].push([[xCenter+80-200,yCenter-120+(i*32),200,28],
+        globalP.text(outputLabelTrace[i],centerX+90-200,centerY-100+(i*32));
+        traversalGlyphMap[0].push([[centerX+80-200,centerY-120+(i*32),200,28],
             outputLabelTrace[i]]);
     }
 
-    xCenter = screenWidth-550;
+    centerX = screenWidth-550;
 
     for (var i=0;i<inputLabelTrace.length;i++) {
         globalP.fill(255,0,0,128);
-        globalP.rect(xCenter-80,yCenter-120+(i*32),200,28);
+        globalP.rect(centerX-80,centerY-120+(i*32),200,28);
         globalP.fill(0);
-        globalP.text(inputLabelTrace[i],xCenter-70,yCenter-100+(i*32));
-        traversalGlyphMap[1].push([[xCenter-80,yCenter-120+(i*32),200,28],
+        globalP.text(inputLabelTrace[i],centerX-70,centerY-100+(i*32));
+        traversalGlyphMap[1].push([[centerX-80,centerY-120+(i*32),200,28],
             inputLabelTrace[i]]);
     }
 }
 
 function drawNodes() {
-    //nodeGlyphMap = [[],[]];
+    var keys = nodeGlyphMap.outputs.keys();
+    var thisX;
+    var thisY;
+    var thisWidth;
+    var numSignals;
+    var numGroups;
+    var subNodes;
+    for (var i=0;i<nodeGlyphMap.outputs.length();i++) {
+        thisX = nodeGlyphMap.outputs.get(keys[i]).layoutX; 
+        thisY = nodeGlyphMap.outputs.get(keys[i]).layoutY; 
+        thisWidth = nodeGlyphMap.outputs.get(keys[i]).symbolWidth; 
+
+        globalP.noStroke();
+        if (isOutputLeafNode(i)) {
+            globalP.fill(0);
+            globalP.ellipse(thisX,thisY,thisWidth-40,thisWidth-40);
+        } else {
+            globalP.fill(0,255,0);
+            globalP.ellipse(thisX,thisY,thisWidth,thisWidth);
+        }
+
+        subNodes = nodeGlyphMap.outputs.get(keys[i]).subNodes;
+        globalP.fill(0);
+        for (var j=0;j<subNodes.length;j++) {
+            globalP.ellipse(subNodes[j].layoutX,subNodes[j].layoutY,subNodes[j].symbolWidth,subNodes[j].symbolWidth);
+        }
+    }
+    keys = nodeGlyphMap.inputs.keys();
+    for (var i=0;i<nodeGlyphMap.inputs.length();i++) {
+        thisX = nodeGlyphMap.inputs.get(keys[i]).layoutX; 
+        thisY = nodeGlyphMap.inputs.get(keys[i]).layoutY; 
+        thisWidth = nodeGlyphMap.inputs.get(keys[i]).symbolWidth; 
+
+        globalP.noStroke();
+        if (isInputLeafNode(i)) {
+            globalP.fill(0);
+            globalP.ellipse(thisX,thisY,thisWidth-40,thisWidth-40);
+        } else {
+            globalP.fill(255,255,0);
+            globalP.ellipse(thisX,thisY,thisWidth,thisWidth);
+        }
+
+        subNodes = nodeGlyphMap.inputs.get(keys[i]).subNodes;
+        globalP.fill(0);
+        for (var j=0;j<subNodes.length;j++) {
+            globalP.ellipse(subNodes[j].layoutX,subNodes[j].layoutY,subNodes[j].symbolWidth,subNodes[j].symbolWidth);
+        }
+    }
+    /*
     nodeGlyphMap = {outputs:new Assoc(), inputs:new Assoc()};
 
     var outputSet = getCurrentOutputLevelSet();
     var inputSet = getCurrentInputLevelSet();
 
+    var outputChildSet = getNumberOfChildNodesForOutputLevel();
+    var inputChildSet = getNumberOfChildNodesForInputLevel();
+
     // outputs
+    var layoutAngle;
+    var layoutX;
+    var layoutY;
     var separationAngle;
     var symbolWidth;
-    var xCenter = 550;
-    var yCenter = 45+(760/2);
-    var layoutRadius = 280;
+    var centerX = 550;
+    var centerY = 45+(760/2);
+
     var count = outputSet.length;
     if (count > 1) {
         separationAngle = Math.PI/(count-1);
     } else {
         separationAngle = Math.PI/(count);
     }
-    if (count < 6) {
-        var symbolWidth = (300*3.1)/6;
+    if (count <= 6) {
+        //symbolWidth = (300*3.1)/6;
+        symbolWidth = 700/6;
     } else {
-        var symbolWidth = (300*3.1)/count;
+        //symbolWidth = (300*3.1)/count;
+        symbolWidth = (700*Math.PI)/(2*( (Math.PI/Math.sin(Math.PI/(count-1))) + (Math.PI/2) ));
     }
+    var layoutRadius = (700/2)-(symbolWidth/2);
 
     for (var i=0;i<count;i++) {
         layoutAngle = (3*Math.PI/2) - i*separationAngle;
-        if (separationAngle == 2*Math.PI) {
-            var layoutX = xCenter;
-            var layoutY = yCenter;
-        } else {
-            var layoutX = xCenter + (layoutRadius*Math.cos(layoutAngle));
-            var layoutY = yCenter + (layoutRadius*Math.sin(layoutAngle));
-        }
+        layoutX = centerX + (layoutRadius*Math.cos(layoutAngle));
+        layoutY = centerY + (layoutRadius*Math.sin(layoutAngle));
 
         globalP.noStroke();
         if (isOutputLeafNode(i)) {
             globalP.fill(0);
+            globalP.ellipse(layoutX,layoutY,symbolWidth-40,symbolWidth-40);
         } else {
             globalP.fill(0,255,0);
-        }
-        if (vizDepth > 2) {
             globalP.ellipse(layoutX,layoutY,symbolWidth,symbolWidth);
+        }
+
+        var layoutAngle2;
+        var layoutX2;
+        var layoutY2;
+        var separationAngle2;
+        var symbolWidth2;
+        var count2 = outputChildSet[i].numGroups+outputChildSet[i].numSignals;
+        if (count2 > 1) {
+            separationAngle2 = Math.PI/(count2-1);
+        } else {
+            separationAngle2 = Math.PI/(count2);
+        }
+
+        if (count2 <= 6) {
+            //var symbolWidth2 = ((symbolWidth/2-30)*3.1)/count2;
+            symbolWidth2 = symbolWidth/6;
+        } else {
+            //var symbolWidth2 = ((symbolWidth/2-20)*3.1)/count2;
+            symbolWidth2 = (symbolWidth*Math.PI)/(2*( (Math.PI/Math.sin(Math.PI/(count2-1))) + (Math.PI/2) ));
+        }
+
+        var layoutRadius2 = (symbolWidth/2)-(symbolWidth2/2);
+        globalP.fill(0);
+
+        for (var j=0;j<count2;j++) {
+            layoutAngle2 = (3*Math.PI/2) - j*separationAngle2;
+            layoutX2 = layoutX + (layoutRadius2*Math.cos(layoutAngle2));
+            layoutY2 = layoutY + (layoutRadius2*Math.sin(layoutAngle2));
+
+            globalP.ellipse(layoutX2,layoutY2,symbolWidth2,symbolWidth2);
         }
 
         nodeGlyphMap.outputs.add(outputSet[i], {layoutX:layoutX,layoutY:layoutY,symbolWidth:symbolWidth,mouseOver:false});
     }
 
     // inputs
-    xCenter = screenWidth-550;
+    centerX = screenWidth-550;
     count = inputSet.length;
     if (count > 1) {
         separationAngle = Math.PI/(count-1);
     } else {
         separationAngle = Math.PI/(count);
     }
-    if (count < 6) {
-        var symbolWidth = (300*3.1)/6;
+    if (count <= 6) {
+        //var symbolWidth = ((700/2)*2.7)/count;
+        symbolWidth = 700/6;
     } else {
-        var symbolWidth = (300*3.1)/count;
+        //var symbolWidth = ((700/2)*2.7)/count;
+        symbolWidth = (700*Math.PI)/(2*( (Math.PI/Math.sin(Math.PI/(count-1))) + (Math.PI/2) ));
     }
+    layoutRadius = (700/2)-(symbolWidth/2);
 
     for (var i=0;i<count;i++) {
         layoutAngle = i*separationAngle + (3*Math.PI/2);
-        if (separationAngle == 2*Math.PI) {
-            var layoutX = xCenter;
-            var layoutY = yCenter;
-        } else {
-            var layoutX = xCenter + (layoutRadius*Math.cos(layoutAngle));
-            var layoutY = yCenter + (layoutRadius*Math.sin(layoutAngle));
-        }
+        layoutX = centerX + (layoutRadius*Math.cos(layoutAngle));
+        layoutY = centerY + (layoutRadius*Math.sin(layoutAngle));
 
         globalP.noStroke();
         if (isInputLeafNode(i)) {
@@ -887,12 +1137,40 @@ function drawNodes() {
         } else {
             globalP.fill(255,255,0);
         }
-        if (vizDepth > 2) {
-            globalP.ellipse(layoutX,layoutY,symbolWidth,symbolWidth);
+        globalP.ellipse(layoutX,layoutY,symbolWidth,symbolWidth);
+
+        var layoutAngle2;
+        var layoutX2;
+        var layoutY2;
+        var separationAngle2;
+        var symbolWidth2;
+        var count2 = inputChildSet[i].numGroups+inputChildSet[i].numSignals;
+        if (count2 > 1) {
+            separationAngle2 = Math.PI/(count2-1);
+        } else {
+            separationAngle2 = Math.PI/(count2);
+        }
+        if (count2 <= 6) {
+            symbolWidth2 = symbolWidth/6;
+            //symbolWidth2 = (symbolWidth*Math.PI)/(2 * (count2-1+(Math.PI/2))) - 20;
+        } else {
+            //symbolWidth2 = (symbolWidth*Math.PI)/(2 * (count2-1+(Math.PI/2))) - 6;
+            symbolWidth2 = (symbolWidth*Math.PI)/(2*( (Math.PI/Math.sin(Math.PI/(count2-1))) + (Math.PI/2) ));
+        }
+        var layoutRadius2 = (symbolWidth/2)-(symbolWidth2/2);
+        globalP.fill(0);
+
+        for (var j=0;j<count2;j++) {
+            layoutAngle2 = j*separationAngle2 + (3*Math.PI/2);
+            layoutX2 = layoutX + (layoutRadius2*Math.cos(layoutAngle2));
+            layoutY2 = layoutY + (layoutRadius2*Math.sin(layoutAngle2));
+
+            globalP.ellipse(layoutX2,layoutY2,symbolWidth2,symbolWidth2);
         }
 
         nodeGlyphMap.inputs.add(inputSet[i], {layoutX:layoutX,layoutY:layoutY,symbolWidth:symbolWidth,mouseOver:false});
     }
+    */
 
 }
 
@@ -1449,7 +1727,7 @@ function main()
         //update_connection_properties_for(args, get_selected(connections));
     });
     command.register("del_connection", function(cmd, args) {
-        var conns = get_selected(connections);
+        //var conns = get_selected(connections);
         connections.remove(args.src_name+'>'+args.dest_name);
         //update_connection_properties_for(args, conns);
     });
@@ -1483,8 +1761,6 @@ var namespaceQuery = [];
 var filterMatches = [[],[],[]]; // outputs,inputs,mappings
 var vizQuery = [];
 var vizMatches = [];
-var vizDepth = 3;
-var vizType = "circle";
 var mappingQuery = [];
 
 var compoundQuery = [];

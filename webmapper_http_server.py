@@ -130,6 +130,25 @@ class MapperHTTPServer(SimpleHTTPServer.SimpleHTTPRequestHandler):
         self.wfile.flush()
 
 def handler_page(out, args):
+    print >>out, """<html>
+<head>
+<title>Testing mapper interface</title>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<script type="text/javascript" src="js/jquery.min.js"></script>
+<script type="text/javascript" src="js/jquery-ui.min.js"></script>
+<script type="text/javascript" src="js/util.js"></script>
+<script type="text/javascript" src="js/json2.js"></script>
+<script type="text/javascript" src="js/command.js"></script>
+<script type="text/javascript" src="js/main.js"></script>
+<link rel="stylesheet" type="text/css" href="css/style.css"></link>
+</head>
+<body>
+<table id="spacerTable"><tr><td></td><td></td><td></td></tr></table>
+<div id="output"></div>
+</body>
+</html>"""
+
+def handler_vizmapper_page(out, args):
     html_file = open(html_file_path,'r')
     print >>out, html_file.read() 
     html_file.close()
@@ -187,7 +206,7 @@ def handler_send_command(out, args):
 def handler_sock(out, args):
     pass
 
-handlers = {'/': [handler_page, 'html'],
+handlers = {'/': [handler_vizmapper_page, 'html'],
             '/wait_cmd': [handler_wait_command, 'json'],
             '/send_cmd': [handler_send_command, 'json'],
             '/sock': [handler_sock, 'socket']}

@@ -206,6 +206,8 @@ def handler_send_command(out, args):
 def handler_sock(out, args):
     pass
 
+#'/main': [handler_page, 'html'],
+
 handlers = {'/': [handler_vizmapper_page, 'html'],
             '/wait_cmd': [handler_wait_command, 'json'],
             '/send_cmd': [handler_send_command, 'json'],
@@ -239,6 +241,7 @@ def serve(port=8000, poll=lambda: time.sleep(10)):
     httpd = ReuseTCPServer(('', port), MapperHTTPServer)
 
     http_thread = threading.Thread(target=httpd.serve_forever)
+    http_thread.daemon=True
     http_thread.start()
 
     print "serving at port", port

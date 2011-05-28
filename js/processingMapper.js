@@ -321,7 +321,8 @@ function updateNodeGlyphMap() {
         layoutX = centerX + (layoutRadius*Math.cos(layoutAngle));
         layoutY = centerY + (layoutRadius*Math.sin(layoutAngle));
 
-        var count2 = outputChildSet[i].numGroups+outputChildSet[i].numSignals;
+        //var count2 = outputChildSet[i].numGroups+outputChildSet[i].numSignals;
+        var count2 = outputChildSet[i].length;
 
         var separationAngle2;
         if (count2 > 1) {
@@ -342,12 +343,14 @@ function updateNodeGlyphMap() {
         }
         var layoutRadius2 = (symbolWidth/2)-(symbolWidth2/2);
 
-        var subNodes = [];
+        //var subNodes = [];
+        var subNodes = new Assoc();
         for (var j=0;j<count2;j++) {
             layoutAngle2 = (3*Math.PI/2) - j*separationAngle2;
             layoutX2 = layoutX + (layoutRadius2*Math.cos(layoutAngle2));
             layoutY2 = layoutY + (layoutRadius2*Math.sin(layoutAngle2));
-            subNodes.push({layoutX:layoutX2,layoutY:layoutY2,symbolWidth:symbolWidth2});
+            //subNodes.push({layoutX:layoutX2,layoutY:layoutY2,symbolWidth:symbolWidth2,isSignal:outputChildSet[i][j]});
+            subNodes.add(outputChildSet[i][j].name,{layoutX:layoutX2,layoutY:layoutY2,symbolWidth:symbolWidth2,isSignal:outputChildSet[i][j].isSignal});
         }
 
         nodeGlyphMap.outputs.add(outputSet[i], {layoutX:layoutX,layoutY:layoutY,symbolWidth:symbolWidth,mouseOver:false,numSignals:outputChildSet[i].numSignals,numGroups:outputChildSet[i].numGroups,subNodes:subNodes});
@@ -377,7 +380,8 @@ function updateNodeGlyphMap() {
         layoutX = centerX + (layoutRadius*Math.cos(layoutAngle));
         layoutY = centerY + (layoutRadius*Math.sin(layoutAngle));
 
-        var count2 = inputChildSet[i].numGroups+inputChildSet[i].numSignals;
+        //var count2 = inputChildSet[i].numGroups+inputChildSet[i].numSignals;
+        var count2 = inputChildSet[i].length;
 
         var separationAngle2;
         if (count2 > 1) {
@@ -398,12 +402,14 @@ function updateNodeGlyphMap() {
         }
         var layoutRadius2 = (symbolWidth/2)-(symbolWidth2/2);
 
-        var subNodes = [];
+        //var subNodes = [];
+        var subNodes = new Assoc();
         for (var j=0;j<count2;j++) {
             layoutAngle2 = j*separationAngle2 + (3*Math.PI/2);
             layoutX2 = layoutX + (layoutRadius2*Math.cos(layoutAngle2));
             layoutY2 = layoutY + (layoutRadius2*Math.sin(layoutAngle2));
-            subNodes.push({layoutX:layoutX2,layoutY:layoutY2,symbolWidth:symbolWidth2});
+            //subNodes.push({layoutX:layoutX2,layoutY:layoutY2,symbolWidth:symbolWidth2,isSignal:inputChildSet[i][j]});
+            subNodes.add(inputChildSet[i][j].name,{layoutX:layoutX2,layoutY:layoutY2,symbolWidth:symbolWidth2,isSignal:inputChildSet[i][j].isSignal});
         }
 
         nodeGlyphMap.inputs.add(inputSet[i], {layoutX:layoutX,layoutY:layoutY,symbolWidth:symbolWidth,mouseOver:false,numSignals:inputChildSet[i].numSignals,numGroups:inputChildSet[i].numGroups,subNodes:subNodes});
@@ -714,25 +720,26 @@ function isOutputLeafNode(index) {
 function getNumberOfChildNodesForOutputLevel() {
     var numbers = [];
     var outputPointer = levels[0][1];
+    var outputPaths = getCurrentOutputPaths();
 
     for (var i=0;i<outputBranchTrace.length;i++) {
         outputPointer = outputPointer[outputBranchTrace[i]][1];
     }
-    var numSignals = 0;
-    var numGroups = 0;
+    var isSignal = [];
     for (var i=0;i<outputPointer.length;i++) {
         if (outputPointer[i] != 0) {
             for (var j=0;j<outputPointer[i][1].length;j++) {
                 if (outputPointer[i][1][j] == 0) {
-                    numSignals++;
+                    isSignal.push({name:outputPaths[i]+"/"+outputPointer[i][0][j],isSignal:1});
+                    //isSignal.push(1);
                 } else {
-                    numGroups++;
+                    isSignal.push({name:outputPaths[i]+"/"+outputPointer[i][0][j],isSignal:0});
+                    //isSignal.push(0);
                 }
             }
         }
-        numbers.push({numSignals:numSignals,numGroups:numGroups}); 
-        numSignals = 0;
-        numGroups = 0;
+        numbers.push(isSignal.slice());
+        isSignal = [];
     }
     return numbers;
 }
@@ -814,24 +821,26 @@ function isInputLeafNode(index) {
 function getNumberOfChildNodesForInputLevel() {
     var numbers = [];
     var inputPointer = levels[1][1];
+    var inputPaths = getCurrentOutputPaths();
+
     for (var i=0;i<inputBranchTrace.length;i++) {
         inputPointer = inputPointer[inputBranchTrace[i]][1];
     }
-    var numSignals = 0;
-    var numGroups = 0;
+    var isSignal = [];
     for (var i=0;i<inputPointer.length;i++) {
         if (inputPointer[i] != 0) {
             for (var j=0;j<inputPointer[i][1].length;j++) {
                 if (inputPointer[i][1][j] == 0) {
-                    numSignals++;
+                    isSignal.push({name:inputPaths[i]+"/"+inputPointer[i][0][j],isSignal:1});
+                    //isSignal.push(1);
                 } else {
-                    numGroups++;
+                    isSignal.push({name:inputPaths[i]+"/"+inputPointer[i][0][j],isSignal:0});
+                    //isSignal.push(0);
                 }
             }
         }
-        numbers.push({numSignals:numSignals,numGroups:numGroups}); 
-        numSignals = 0;
-        numGroups = 0;
+        numbers.push(isSignal.slice());
+        isSignal = [];
     }
     return numbers;
 }
@@ -901,17 +910,18 @@ function drawBackground() {
     var centerY = 45+(760/2);
     var backgroundWidth = 700;
 
-    globalP.noStroke();
-    globalP.fill(200,255);
-    globalP.ellipse(centerX,centerY,backgroundWidth,backgroundWidth);
-    globalP.fill(0);
+    globalP.strokeWeight(1);
+    globalP.stroke(0,255,0);
+    globalP.noFill();
+    globalP.arc(centerX,centerY,backgroundWidth,backgroundWidth,Math.PI/2,3*Math.PI/2);
 
     centerX = screenWidth-550;
 
-    globalP.noStroke();
-    globalP.fill(200,255);
-    globalP.ellipse(centerX,centerY,backgroundWidth,backgroundWidth);
-    globalP.fill(0);
+    globalP.strokeWeight(1);
+    globalP.stroke(255,255,0);
+    globalP.noFill();
+    globalP.arc(centerX,centerY,backgroundWidth,backgroundWidth,0,Math.PI/2);
+    globalP.arc(centerX,centerY,backgroundWidth,backgroundWidth,3*Math.PI/2,2*Math.PI);
 }
 
 function drawListGlyphs() {
@@ -992,19 +1002,30 @@ function drawNodes() {
         thisY = nodeGlyphMap.outputs.get(keys[i]).layoutY; 
         thisWidth = nodeGlyphMap.outputs.get(keys[i]).symbolWidth; 
 
-        globalP.noStroke();
         if (isOutputLeafNode(i)) {
-            globalP.fill(0);
-            globalP.ellipse(thisX,thisY,thisWidth-40,thisWidth-40);
+            globalP.noStroke();
+            globalP.fill(0,200,0);
         } else {
-            globalP.fill(0,255,0);
-            globalP.ellipse(thisX,thisY,thisWidth,thisWidth);
+            globalP.strokeWeight(5);
+            globalP.stroke(0,200,0);
+            globalP.noFill();
         }
+        globalP.ellipse(thisX,thisY,thisWidth,thisWidth);
 
-        subNodes = nodeGlyphMap.outputs.get(keys[i]).subNodes;
-        globalP.fill(0);
+        subNodes = nodeGlyphMap.outputs.get(keys[i]).subNodes.keys();
         for (var j=0;j<subNodes.length;j++) {
-            globalP.ellipse(subNodes[j].layoutX,subNodes[j].layoutY,subNodes[j].symbolWidth,subNodes[j].symbolWidth);
+            if (nodeGlyphMap.outputs.get(keys[i]).subNodes.get(subNodes[j]).isSignal) {
+                globalP.noStroke();
+                globalP.fill(0,150,0);
+            } else {
+                globalP.strokeWeight(3);
+                globalP.stroke(0,150,0);
+                globalP.noFill();
+            }
+            globalP.ellipse(nodeGlyphMap.outputs.get(keys[i]).subNodes.get(subNodes[j]).layoutX,
+                    nodeGlyphMap.outputs.get(keys[i]).subNodes.get(subNodes[j]).layoutY,
+                    nodeGlyphMap.outputs.get(keys[i]).subNodes.get(subNodes[j]).symbolWidth,
+                    nodeGlyphMap.outputs.get(keys[i]).subNodes.get(subNodes[j]).symbolWidth);
         }
     }
     keys = nodeGlyphMap.inputs.keys();
@@ -1013,19 +1034,31 @@ function drawNodes() {
         thisY = nodeGlyphMap.inputs.get(keys[i]).layoutY; 
         thisWidth = nodeGlyphMap.inputs.get(keys[i]).symbolWidth; 
 
-        globalP.noStroke();
         if (isInputLeafNode(i)) {
-            globalP.fill(0);
-            globalP.ellipse(thisX,thisY,thisWidth-40,thisWidth-40);
+            globalP.noStroke();
+            globalP.fill(200,200,0);
         } else {
-            globalP.fill(255,255,0);
-            globalP.ellipse(thisX,thisY,thisWidth,thisWidth);
+            globalP.strokeWeight(5);
+            globalP.stroke(200,200,0);
+            globalP.noFill();
         }
+        globalP.ellipse(thisX,thisY,thisWidth,thisWidth);
 
-        subNodes = nodeGlyphMap.inputs.get(keys[i]).subNodes;
-        globalP.fill(0);
+        subNodes = nodeGlyphMap.inputs.get(keys[i]).subNodes.keys();
         for (var j=0;j<subNodes.length;j++) {
-            globalP.ellipse(subNodes[j].layoutX,subNodes[j].layoutY,subNodes[j].symbolWidth,subNodes[j].symbolWidth);
+            if (subNodes[j].isSignal) {
+                globalP.noStroke();
+                globalP.fill(150,150,0);
+            } else {
+                globalP.strokeWeight(3);
+                globalP.stroke(150,150,0);
+                globalP.noFill();
+            }
+            globalP.ellipse(nodeGlyphMap.inputs.get(keys[i]).subNodes.get(subNodes[j]).layoutX,
+                    nodeGlyphMap.inputs.get(keys[i]).subNodes.get(subNodes[j]).layoutY,
+                    nodeGlyphMap.inputs.get(keys[i]).subNodes.get(subNodes[j]).symbolWidth,
+                    nodeGlyphMap.inputs.get(keys[i]).subNodes.get(subNodes[j]).symbolWidth);
+            //globalP.ellipse(subNodes[j].layoutX,subNodes[j].layoutY,subNodes[j].symbolWidth,subNodes[j].symbolWidth);
         }
     }
     /*
@@ -1181,6 +1214,8 @@ function drawEdges() {
     var outputSet = getCurrentOutputPaths();
     var inputSet = getCurrentInputPaths();
 
+    var outputChildren = getNumberOfChildNodesForOutputLevel();
+    var inputChildren = getNumberOfChildNodesForInputLevel();
     var outputLevel = getCurrentOutputLevelSet();
     var inputLevel = getCurrentInputLevelSet();
 
@@ -1192,22 +1227,44 @@ function drawEdges() {
 
     for (var i=0;i<connectionKeys.length;i++) {
         for (var j=0;j<outputSet.length;j++) {
-            var exp = new RegExp(outputSet[j]+".*>");
-            if (connectionKeys[i].match(exp)) {
+            var exp1 = new RegExp(outputSet[j]+">");
+            var exp2 = new RegExp(outputSet[j]+".*>");
+            if (connectionKeys[i].match(exp1)) {
                 connectionOutputMatches.push(connectionKeys[i]); 
-                keyPairs.add(connectionKeys[i], {output:outputLevel[j]});
+                keyPairs.add(connectionKeys[i], {output:outputLevel[j],isOutputSubnode:false});
+            } else if (connectionKeys[i].match(exp2)) {
+                connectionOutputMatches.push(connectionKeys[i]); 
+                for (var k=0;k<outputChildren[j].length;k++) {
+                    var exp3 = new RegExp(outputChildren[j][k].name+".*>");
+                    if (connectionKeys[i].match(exp3)) {
+                        keyPairs.add(connectionKeys[i], {output:outputChildren[j][k].name,isOutputSubnode:true});
+                    }
+                }
             }
         }
     }
     for (var i=0;i<connectionOutputMatches.length;i++) {
         for (var j=0;j<inputSet.length;j++) {
-            if (connectionOutputMatches[i].match(">"+inputSet[j])) {
+            var exp1 = new RegExp(">"+inputSet[j]+".+");
+            var exp2 = new RegExp(">"+inputSet[j]+".*");
+            if (connectionOutputMatches[i].match(exp1)) {
+                connectionInputMatches.push(connectionKeys[i]); 
+                for (var k=0;k<inputChildren[j].length;k++) {
+                    var exp3 = new RegExp(">"+inputChildren[j][k].name+".*");
+                    if (connectionOutputMatches[i].match(exp3)) {
+                        keyPairs.get(connectionOutputMatches[i]).input = inputChildren[j][k].name;
+                        keyPairs.get(connectionOutputMatches[i]).isInputSubnode = true;
+                    }
+                }
+            } else if (connectionOutputMatches[i].match(exp2)) {
                 connectionInputMatches.push(connectionOutputMatches[i]); 
                 keyPairs.get(connectionOutputMatches[i]).input = inputLevel[j];
+                keyPairs.get(connectionOutputMatches[i]).isInputSubnode = false;
             }
         }
     }
 
+/*
     var keys = keyPairs.keys();
     globalP.stroke(0); 
     globalP.strokeWeight(4); 
@@ -1219,6 +1276,7 @@ function drawEdges() {
                     nodeGlyphMap.inputs.get(keyPairs.get(keys[i]).input).layoutY);
         }
     }
+    */
 
     return [connectionOutputMatches, connectionInputMatches, keyPairs];
 

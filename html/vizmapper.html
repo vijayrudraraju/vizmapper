@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en" class="graphColor">
+<head>
+<title>webmapper</title>
+
+<link rel="stylesheet" href="/css/reset.css" type="text/css">
+<link rel="stylesheet" href="/css/processingMapper.css" type="text/css">
+
+<script src="/js/json2.js" type="text/javascript"></script>
+<script src="/js/jquery-1.4.4.js" type="text/javascript"></script>
+<script src="/js/processing-1.0.0.min.js" type="text/javascript"></script>
+
+<script src="/js/util.js" type="text/javascript"></script>
+<script src="/js/command.js" type="text/javascript"></script>
+
+<script src="/js/vizmapper.js" type="text/javascript"></script>
+</head>
+
+<body>
+	<canvas id="globalCanvas"></canvas>
+	<p id="signalsFile">JSON file: http://arrangatta.appspot.com/data/testerNetwork.json</p>
+	<p id="mappingsFile">JSON file: http://arrangatta.appspot.com/data/testerMapping.json</p>
+	<pre id="rawText"></pre>
+
+	<p id="filterInputLabel">signal filter</p>
+	<input id="filterInput" value=""/>
+	<pre id="filterText"></pre>
+
+	<div id="graphTab" class="active">graph</div>
+	<div id="listTab" class="inactive">list</div>
+	<div id="rawTab" class="inactive">raw</div>
+
+	<div id="addMappingForm">
+		<p>adding new connection from</p>
+		<br/>
+		<p id="selectedOutput">output = </p>
+		<p>to</p>
+		<p id="selectedInput">input = </p>
+		<br/>
+		<p>with following mapping</p>
+		<br/>
+		<pre id="mappingTemplate">input = ( output *          	) + </pre>
+		<input id="mappingFactorInput"/>
+		<input id="mappingOffsetInput"/>
+		<div id="okMapping">OK</div>
+		<div id="cancelMapping">CANCEL</div>
+	</div>
+
+	<div id="removeConnectionForm">
+		<p>remove connection?</p>
+		<div id="okRemoveConnection">YES</div>
+		<div id="cancelRemoveConnection">NO</div>
+	</div>
+
+	<div id="aboutSwitch" class="aboutClosed">
+		<p id="aboutAlterText">about</p>
+		<p id="aboutText"><b>about</b><br/><br/><b><i>vizmapper</i></b> is one of several graphical user interfaces for the <a href="http://www.idmil.org/software/libmapper">libmapper</a> system.<br/><br/><b><i>vizmapper</i></b> emphasizes the use of visualization techniques from research literature to reduce the complexity of managing connections between networked devices with a large aggregate number of inputs and outputs.<br/><br/>work on <b><i>vizmapper</i></b> began as the primary component of a master's thesis project by Vijay Rudraraju as a member of the Input Devices and Music Interaction Lab (IDMIL) at McGill University.<br/><br/><br/><br/><br/><br/><br/>click to close</p>	
+	</div>
+
+	<div id="helpSwitch" class="helpClosed">
+		<p id="helpAlterText">help</p>
+		<p id="helpText"><b>help</b><br/><br/>usage of <b><i>vizmapper</i></b> centers around a few key concepts that may be new to you.<br/><br/><span id="viewHelpTrigger" class="normalHelp">views</span><br/><br/><span id="signalHelpTrigger" class="normalHelp">signals</span><br/><br/><span id="mappingHelpTrigger" class="normalHelp">mappings</span></br/><br/><span id="filteringHelpTrigger" class="normalHelp">text filtering</span><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/>click to close</p>
+	</div>
+
+	<div id="viewHelp" class="bigTopicHelp">
+		<p><b>views</b></p>
+		<br/><br/>
+		<p>the interface provides 3 views on the network structure and topology.</p>
+		<br/>
+		<p>the <b>graph</b> view displays signals as black circles.</p>
+		<br/>
+		<p><b>signals</b> are clustered according to their hierarchical namespace. mousing over a signal displays the signal name. the white circles represent clusters according to the first parent level. the gray circles represent clusters according to the second parent level. if a signal namespace is only 2 (or 1) levels deep then the white (and gray) circles are still displayed for visual consistency.</p>
+		<p><b>connections</b> in the graph view are represented by black lines. mousing over a connection displays the mapping used in the connection. new connections are made by clicking on an output signal followed by clicking on an input signal. a dialog appears allowing the user to specify the mapping to be used in the connection. connections are removed by clicking on a connection.</p>
+		<br/>
+		<p>the <b>list</b> view displays more detailed signal and mapping metadata in simple list form.</p>
+		<br/>
+		<p>the <b>raw</b> view displays the raw JSON data that is currently being manipulated with the interface.</p>
+		<p>NOTE: until work on the server side code utilizing libmapper is completed this raw data represents a static, dummy network that does not actually get modified. once the server side code is completed the JSON files will dynamically change to reflect configurations changes made using <b>vizmapper</b> and the real-time state of the network.</p>
+	</div>
+
+	<div id="signalHelp" class="topicHelp">
+		<p><b>signals</b></p>
+		<br/><br/>
+		<p>signals represent the available sources and destinations of real-time data present in the network.</p>
+		<p>NOTE: until work on the server side code utilizing libmapper is completed, the "network" is represented by static JSON files that can be viewed by clicking on the <b>"raw"</b> tab.</p>
+		<br/>
+		<p>libmapper uses the <b>OpenSoundControl</b> protocol to represent signals on the network using hierarchical namespaces.</p>
+		<br/>
+		<p><i>an example output signal might be a microphone signal that outputs a floating point signal and is named "/microphone/amplitude"</i></p>
+		<p><i>an example input signal might be a speaker signal that accepts a connection from a floating point output signal and is named "/speaker/left/treble"</i></p>
+	</div>
+	<div id="mappingHelp" class="topicHelp">
+		<p><b>mappings</b></p>
+		<br/><br/>
+		<p>a mapping is a mathematical expression that defines the transformation that is applied to an output signal by libmapper before it is fed into the input signal that it is connected to.</p>
+		<br/>
+		<p>a mapping (and thus a connection) is created by first clicking on the output signal that one wants to act as the source of data and then clicking on the input signal that one wants to act as the destination of data after it is transformed by the mapping.</p> 
+	</div>
+	<div id="filteringHelp" class="bigTopicHelp">
+		<p><b>text filtering</b></p>
+		<br/><br/>
+		<p>a distinguishing feature of <b>vizmapper</b> is the ability to filter the graph view by signal name by typing in the text input box at the top center of the interface.</p>
+		<br/>
+		<p>a filter expression must always begin with a forward slash ("/"). the string following the slash represents the string that will be used to filter the signals.</p>
+		<p><i>for example, the string "/ear" will keep those signals that have the string "ear" somewhere within their namespace.</i></p>
+		<br/>
+		<p>an expression can be made more nuanced by using additional forward slashes that functionally act as a logical AND.</p>
+		<p><i>for example, the string "/ear/blob2" will keep those signals that have "ear" at some level in their namespace AND "blob2" at another</i> NOTE: currently not working properly!</p>
+		<br/>
+		<p>one can group the matches of multiple filters together by sepearating multiple filter expressions with a space (" "). this acts functionally as a logical OR.</p>
+		<p><i>for example, the string "/ear/blob2 /eye /monitor" will filter the set of all signals through each of the 3 expressions and then display the results of each filter together.</i></p>
+	</div>
+	<div id="taggingHelp" class="topicHelp">
+		<p><b>tagging</b></p>
+		<br/><br/>
+	</div>
+
+	<div id="signalsTab" class="active">signals</div>
+	<div id="mappingsTab" class="inactive">mappings</div>
+
+	<!--<input id="executeInput"/>
+	<pre id="executeText"></pre>
+	<button id="executeButton">execute</button>-->
+</body>
+</html>

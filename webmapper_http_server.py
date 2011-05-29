@@ -20,7 +20,7 @@ file_path = os.getcwd()+'/data/live.json'
 live_file = open(file_path,'w')
 '''
 
-html_file_path = os.getcwd()+'/html/processingMapper.html'
+html_file_path = os.getcwd()+'/html/vizmapper.html'
 
 message_pipe = []
 tracing = True
@@ -209,6 +209,7 @@ def handler_sock(out, args):
 #'/main': [handler_page, 'html'],
 
 handlers = {'/': [handler_vizmapper_page, 'html'],
+            '/main': [handler_page, 'html'],
             '/wait_cmd': [handler_wait_command, 'json'],
             '/send_cmd': [handler_send_command, 'json'],
             '/sock': [handler_sock, 'socket']}

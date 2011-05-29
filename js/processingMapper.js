@@ -76,8 +76,15 @@ var ys = [];
 
 var screenWidth = 1280;
 var screenHeight = 800;
+
+var centerX1 = 550;
+var centerY1 = 45+(760/2);
+var centerX2 = screenWidth-550;
+var centerY2 = 45+(760/2);
+
 var mouseX = globalP.mouseX;
 var mouseY = globalP.mouseY;
+
 var drawCounter = 0;
 
 var outputBranchTrace = [];
@@ -723,6 +730,10 @@ function getNumberOfChildNodesForOutputLevel() {
     var outputPaths = getCurrentOutputPaths();
 
     for (var i=0;i<outputBranchTrace.length;i++) {
+        if (outputPointer.length == 0) {
+            outputPointer = [];
+            break;
+        }
         outputPointer = outputPointer[outputBranchTrace[i]][1];
     }
     var isSignal = [];
@@ -748,6 +759,10 @@ function getCurrentOutputLevelSet() {
     var outputPointer = levels[0][1];
 
     for (var i=0;i<outputBranchTrace.length;i++) {
+        if (outputPointer.length == 0) {
+            outputSet = [];
+            break;
+        }
         outputSet = outputPointer[outputBranchTrace[i]][0]; 
         outputPointer = outputPointer[outputBranchTrace[i]][1];
     }
@@ -821,9 +836,13 @@ function isInputLeafNode(index) {
 function getNumberOfChildNodesForInputLevel() {
     var numbers = [];
     var inputPointer = levels[1][1];
-    var inputPaths = getCurrentOutputPaths();
+    var inputPaths = getCurrentInputPaths();
 
     for (var i=0;i<inputBranchTrace.length;i++) {
+        if (inputPointer.length == 0) {
+            inputPointer = [];
+            break;
+        }
         inputPointer = inputPointer[inputBranchTrace[i]][1];
     }
     var isSignal = [];
@@ -848,6 +867,10 @@ function getCurrentInputLevelSet() {
     var inputSet = levels[1][0];
     var inputPointer = levels[1][1];
     for (var i=0;i<inputBranchTrace.length;i++) {
+        if (inputPointer.length == 0) {
+            inputSet = [];
+            break;
+        }
         inputSet = inputPointer[inputBranchTrace[i]][0]; 
         inputPointer = inputPointer[inputBranchTrace[i]][1];
     }
@@ -906,22 +929,18 @@ function climbInputTree(level) {
 }
 
 function drawBackground() {
-    var centerX = 550;
-    var centerY = 45+(760/2);
     var backgroundWidth = 700;
 
     globalP.strokeWeight(1);
     globalP.stroke(0,255,0);
     globalP.noFill();
-    globalP.arc(centerX,centerY,backgroundWidth,backgroundWidth,Math.PI/2,3*Math.PI/2);
-
-    centerX = screenWidth-550;
+    globalP.arc(centerX1,centerY1,backgroundWidth,backgroundWidth,Math.PI/2,3*Math.PI/2);
 
     globalP.strokeWeight(1);
     globalP.stroke(255,255,0);
     globalP.noFill();
-    globalP.arc(centerX,centerY,backgroundWidth,backgroundWidth,0,Math.PI/2);
-    globalP.arc(centerX,centerY,backgroundWidth,backgroundWidth,3*Math.PI/2,2*Math.PI);
+    globalP.arc(centerX2,centerY2,backgroundWidth,backgroundWidth,0,Math.PI/2);
+    globalP.arc(centerX2,centerY2,backgroundWidth,backgroundWidth,3*Math.PI/2,2*Math.PI);
 }
 
 function drawListGlyphs() {
@@ -932,7 +951,7 @@ function drawListGlyphs() {
     globalP.textSize(12);
     globalP.noStroke();
     for (var i=0;i<outputSet.length;i++) {
-        globalP.fill(0,0,255,128);
+        globalP.fill(0,200,130,230);
         /*
         if (hoverGlyphMap[0][i]) {
             globalP.rect(0,150+(i*32),200,28);
@@ -945,7 +964,7 @@ function drawListGlyphs() {
         globalP.text(outputSet[i],10,170+(i*32));
     }
     for (var i=0;i<inputSet.length;i++) {
-        globalP.fill(0,0,255,128);
+        globalP.fill(180,180,100,230);
         /*
         if (hoverGlyphMap[1][i]) {
             globalP.rect(screenWidth-200,150+(i*32),200,28);
@@ -962,29 +981,24 @@ function drawListGlyphs() {
 function drawTraversalGlyphs() {
     traversalGlyphMap = [[],[]];
 
-    var centerX = 550;
-    var centerY = 45+(760/2);
-
     globalP.textAlign(globalP.LEFT);
     globalP.textSize(16);
     globalP.noStroke();
     for (var i=0;i<outputLabelTrace.length;i++) {
-        globalP.fill(255,0,0,128);
-        globalP.rect(centerX+80-200,centerY-120+(i*32),200,28);
+        globalP.fill(0,230,0,210);
+        globalP.rect(centerX1+80-200,centerY1-120+(i*32),200,28);
         globalP.fill(0);
-        globalP.text(outputLabelTrace[i],centerX+90-200,centerY-100+(i*32));
-        traversalGlyphMap[0].push([[centerX+80-200,centerY-120+(i*32),200,28],
+        globalP.text(outputLabelTrace[i],centerX1+90-200,centerY1-100+(i*32));
+        traversalGlyphMap[0].push([[centerX1+80-200,centerY1-120+(i*32),200,28],
             outputLabelTrace[i]]);
     }
 
-    centerX = screenWidth-550;
-
     for (var i=0;i<inputLabelTrace.length;i++) {
-        globalP.fill(255,0,0,128);
-        globalP.rect(centerX-80,centerY-120+(i*32),200,28);
+        globalP.fill(230,230,0,210);
+        globalP.rect(centerX2-80,centerY2-120+(i*32),200,28);
         globalP.fill(0);
-        globalP.text(inputLabelTrace[i],centerX-70,centerY-100+(i*32));
-        traversalGlyphMap[1].push([[centerX-80,centerY-120+(i*32),200,28],
+        globalP.text(inputLabelTrace[i],centerX2-70,centerY2-100+(i*32));
+        traversalGlyphMap[1].push([[centerX2-80,centerY2-120+(i*32),200,28],
             inputLabelTrace[i]]);
     }
 }
@@ -1009,6 +1023,9 @@ function drawNodes() {
             globalP.strokeWeight(5);
             globalP.stroke(0,200,0);
             globalP.noFill();
+        }
+        if (nodeGlyphMap.outputs.get(keys[i]).mouseOver) {
+            globalP.fill(0,200,130,230);
         }
         globalP.ellipse(thisX,thisY,thisWidth,thisWidth);
 
@@ -1041,6 +1058,9 @@ function drawNodes() {
             globalP.strokeWeight(5);
             globalP.stroke(200,200,0);
             globalP.noFill();
+        }
+        if (nodeGlyphMap.inputs.get(keys[i]).mouseOver) {
+            globalP.fill(180,180,100,230);
         }
         globalP.ellipse(thisX,thisY,thisWidth,thisWidth);
 
@@ -1237,7 +1257,7 @@ function drawEdges() {
                 for (var k=0;k<outputChildren[j].length;k++) {
                     var exp3 = new RegExp(outputChildren[j][k].name+".*>");
                     if (connectionKeys[i].match(exp3)) {
-                        keyPairs.add(connectionKeys[i], {output:outputChildren[j][k].name,isOutputSubnode:true});
+                        keyPairs.add(connectionKeys[i], {output:outputLevel[j],outputChild:outputChildren[j][k].name,isOutputSubnode:true});
                     }
                 }
             }
@@ -1252,7 +1272,8 @@ function drawEdges() {
                 for (var k=0;k<inputChildren[j].length;k++) {
                     var exp3 = new RegExp(">"+inputChildren[j][k].name+".*");
                     if (connectionOutputMatches[i].match(exp3)) {
-                        keyPairs.get(connectionOutputMatches[i]).input = inputChildren[j][k].name;
+                        keyPairs.get(connectionOutputMatches[i]).input = inputLevel[j];
+                        keyPairs.get(connectionOutputMatches[i]).inputChild = inputChildren[j][k].name;
                         keyPairs.get(connectionOutputMatches[i]).isInputSubnode = true;
                     }
                 }
@@ -1261,6 +1282,58 @@ function drawEdges() {
                 keyPairs.get(connectionOutputMatches[i]).input = inputLevel[j];
                 keyPairs.get(connectionOutputMatches[i]).isInputSubnode = false;
             }
+        }
+    }
+
+    var keys = keyPairs.keys();
+    var x1, y1, x2, y2;
+    var cx1, cy1, cx2, cy2;
+    globalP.strokeWeight(3);
+    globalP.stroke(0);
+    globalP.noFill();
+    for (var i=0;i<keys.length;i++) {
+        if (keyPairs.get(keys[i]).input != undefined) {
+            if (keyPairs.get(keys[i]).isOutputSubnode) {
+                x1 = nodeGlyphMap.outputs.get(keyPairs.get(keys[i]).output).subNodes.get(keyPairs.get(keys[i]).outputChild).layoutX;
+                y1 = nodeGlyphMap.outputs.get(keyPairs.get(keys[i]).output).subNodes.get(keyPairs.get(keys[i]).outputChild).layoutY;
+            } else {
+                x1 = nodeGlyphMap.outputs.get(keyPairs.get(keys[i]).output).layoutX;
+                y1 = nodeGlyphMap.outputs.get(keyPairs.get(keys[i]).output).layoutY;
+            }
+            if (keyPairs.get(keys[i]).isInputSubnode) {
+                x2 = nodeGlyphMap.inputs.get(keyPairs.get(keys[i]).input).subNodes.get(keyPairs.get(keys[i]).inputChild).layoutX;
+                y2 = nodeGlyphMap.inputs.get(keyPairs.get(keys[i]).input).subNodes.get(keyPairs.get(keys[i]).inputChild).layoutY;
+            } else {
+                x2 = nodeGlyphMap.inputs.get(keyPairs.get(keys[i]).input).layoutX;
+                y2 = nodeGlyphMap.inputs.get(keyPairs.get(keys[i]).input).layoutY;
+            }
+
+            if (y1 < centerY1) {
+                if (y2 < centerY2) {
+                    cx1 = x1+50;
+                    cy1 = y1+80;
+                    cx2 = x2-50;
+                    cy2 = y2+80;
+                } else {
+                    cx1 = x1+50;
+                    cy1 = y1-80;
+                    cx2 = x2-50;
+                    cy2 = y2+80;
+                }
+            } else {
+                if (y2 < centerY2) {
+                    cx1 = x1+50;
+                    cy1 = y1+80;
+                    cx2 = x2-50;
+                    cy2 = y2-80;
+                } else {
+                    cx1 = x1+50;
+                    cy1 = y1-80;
+                    cx2 = x2-50;
+                    cy2 = y2-80;
+                }
+            }
+            globalP.bezier(x1,y1,cx1,cy1,cx2,cy2,x2,y2);
         }
     }
 
@@ -1883,7 +1956,7 @@ function updateActiveFilter() {
 				compoundQuery[1][i] = ["#"];
 			}
 		}
-		for (var i=0;i<compoundQuery[2].length;i++) {
+		for (varkkkki=0;i<compoundQuery[2].length;i++) {
 			if (compoundQuery[2][i] == null) {
 				compoundQuery[2][i] = ["/"];
 			}
@@ -1917,7 +1990,6 @@ function updateSignalMatches() {
                } else if (signals.get(keys[i]).direction == 0) {	
                    filterMatches[1].push([signals.get(keys[i]).device_name,signals.get(keys[i]).name]);
                }
-               //tables[0].push(masterNetworkIndex[i]);
         }
     }
 }

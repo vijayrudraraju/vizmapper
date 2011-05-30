@@ -1,3 +1,6 @@
+//TODO
+// when there are edges that are supposed to appear in view, but not edit, crash involving layoutX
+
 //libmapper info
 
 //Device
@@ -58,8 +61,11 @@ var nodeGlyphMap = {outputs:new Assoc(),inputs:new Assoc()};
 var listGlyphMap = [[],[]];
 var traversalGlyphMap = [[],[]];
 
-var selectedOutput = "";
-var selectedInput = "";
+var mousedSource = "";
+var mousedDestination = "";
+var selectedSource = "none";
+var selectedDestination = "none";
+var selectedEdge;
 
 var selectedRemoveOutput = "";
 var selectedRemoveInput = "";
@@ -95,69 +101,12 @@ function globalP(p) {
 
 	p.mouseClicked = function() {
 		if ($('#graphTab').hasClass('active')) {
-            //console.log("click");
             detectNodeClick(false);
             detectTraversalClick();
-            //console.log("click done");
 		} else if ($('#listTab').hasClass('active')) {
             detectNodeClick(true);
             detectEdgeClick();
         }
-        /*
-        if ($('#graphTab').hasClass('active')) {
-            // connection selection for removal
-            for (var i=0;i<hoverGlyphMap[2].length;i++) {
-                if (hoverGlyphMap[2][i]) {
-                    selectedRemoveOutput = tables[1][i].output[2];
-                    selectedRemoveInput = tables[1][i].input[2];
-                    $('#removeConnectionForm').toggle(true);
-                }
-            }
-
-			// output and input selection for mappings
-			var clearSelection = true;
-			var thisString = "";
-			for (var i=0;i<hoverGlyphMap[0][0].length;i++) {
-				thisString = "";
-				if (hoverGlyphMap[0][0][i]) {
-					for (var j=nodeGlyphMap[0][0][i][1].length-1;j>=0;j--) {
-						thisString += "/"+nodeGlyphMap[0][0][i][1][j];
-					}
-					selectedOutput = thisString;
-					clearSelection = false;
-					break;
-				}
-			}
-
-			selectedInput = "";
-			for (var i=0;i<hoverGlyphMap[1][0].length;i++) {
-				thisString = "";
-				if (hoverGlyphMap[1][0][i]) {
-					for (var j=nodeGlyphMap[1][0][i][1].length-1;j>=0;j--) {
-						thisString += "/"+nodeGlyphMap[1][0][i][1][j];
-					}
-					selectedInput = thisString;
-					clearSelection = false;
-					break;
-				}
-			}
-
-			if (clearSelection) {
-				selectedOutput = "";
-				selectedInput = "";
-			}
-		} else if ($('#listTab').hasClass('active')) {
-			if (mouseX<220 && mouseX>20 && mouseY<780 && mouseY>750) {
-				if (signalPagePointer+numberOfItemsPerPage < tables[0].length) {
-					signalPagePointer += numberOfItemsPerPage;					
-				}
-			} else if (mouseX<220 && mouseX>20 && mouseY<100 && mouseY>70) {
-				if (signalPagePointer-numberOfItemsPerPage >= 0) {
-					signalPagePointer -= numberOfItemsPerPage;					
-				}
-			}
-        }
-        */
 	};
 
 	p.setup = function() {
@@ -171,6 +120,7 @@ function globalP(p) {
 	p.draw = function() {
 
         if (updateGraph) {
+            clearConnectionForm();
             updateActiveFilter();
             updateSignalMatches();
             updateLevelStructure();
@@ -231,6 +181,9 @@ function globalP(p) {
 }
 
 function updateNodeMouseState() {
+    mousedSource = "";
+    mousedDestination = "";
+
     // hover detection of source nodes and destination nodes 
     if ($('#graphTab').hasClass('active') || $('#listTab').hasClass('active')) {
         var thisX = 0; // input,level,container,drawingNumbers,thisX
@@ -238,6 +191,7 @@ function updateNodeMouseState() {
         var thisRadius = 0;
 
         var keys = nodeGlyphMap.outputs.keys();
+        var sourcePaths = getCurrentOutputPathsFromNodes();
         for (var i=0;i<keys.length;i++) {
             thisX = nodeGlyphMap.outputs.get(keys[i]).layoutX;
             thisY = nodeGlyphMap.outputs.get(keys[i]).layoutY;
@@ -246,11 +200,13 @@ function updateNodeMouseState() {
             // is the mouse within the bounds of the node glyph?
             if (Math.pow(mouseX-thisX,2)+Math.pow(mouseY-thisY,2) < Math.pow(thisRadius,2)) {
                 nodeGlyphMap.outputs.get(keys[i]).mouseOver = true;
+                mousedSource = sourcePaths[i];
             } else {
                 nodeGlyphMap.outputs.get(keys[i]).mouseOver = false;
             }
         }
         keys = nodeGlyphMap.inputs.keys();
+        var destinationPaths = getCurrentInputPathsFromNodes();
         for (var i=0;i<keys.length;i++) {
             thisX = nodeGlyphMap.inputs.get(keys[i]).layoutX;
             thisY = nodeGlyphMap.inputs.get(keys[i]).layoutY;
@@ -259,10 +215,22 @@ function updateNodeMouseState() {
             // is the mouse within the bounds of the node glyph?
             if (Math.pow(mouseX-thisX,2)+Math.pow(mouseY-thisY,2) < Math.pow(thisRadius,2)) {
                 nodeGlyphMap.inputs.get(keys[i]).mouseOver = true;
+                mousedDestination = destinationPaths[i];
             } else {
                 nodeGlyphMap.inputs.get(keys[i]).mouseOver = false;
             }
         }
+    }
+
+    if (mousedSource == "") {
+        $('#selectedSource').text(selectedSource);
+    } else {
+        $('#selectedSource').text(mousedSource);
+    }
+    if (mousedDestination == "") {
+        $('#selectedDestination').text(selectedDestination);
+    } else {
+        $('#selectedDestination').text(mousedDestination);
     }
 }
 
@@ -308,135 +276,150 @@ function updateEdgeMouseState() {
                     edgeGlyphMap.get(keys[i]).mouseOver = true;
                     break;
                 }
-            }
-        }
-    }
-
-}
-
-function addConnection() {
-    // add
-    var alreadyThere = false;
-    if (selectedOutput!="" && selectedInput!="") {
-        for (var j=0;j<masterMappingIndex.length;j++) {
-            if (selectedOutput==masterMappingIndex[j].output[2] &&
-                    selectedInput==masterMappingIndex[j].input[2]) {
-                masterMappingIndex[j].expression = 
-                    "input=output*("+$('#mappingFactorInput').val()+")+("+$('#mappingOffsetInput').val()+")";	
-                alreadyThere = true;
-                break;
-            }
-        }
-        if (!alreadyThere) {
-            masterMappingIndex.push(
-                    {"expression":"input=output*("+$('#mappingFactorInput').val()+")+("+$('#mappingOffsetInput').val()+")",
-                    "output":["","",selectedOutput],
-                    "input":["","",selectedInput]}
-                    );
-        }
-    }
-
-    updateActiveFilter();
-}
-function removeConnection() {
-    for (var j=0;j<masterMappingIndex.length;j++) {
-        if (selectedRemoveOutput==masterMappingIndex[j].output[2] &&
-                selectedRemoveInput==masterMappingIndex[j].input[2]) {
-            masterMappingIndex.splice(j,1);	
-        }
-    }
-
-    updateActiveFilter();
-}
-
-/*
-function drawConnectionProcess() {
-    var thisString = "";
-    var thisX = 0;
-    var thisY = 0;
-
-    var cp1x = 450;
-    var cp1y = 45+(760/2);
-    var cp2x = screenWidth-450;
-    var cp2y = 45+(760/2);
-
-
-    if (selectedInput != "" && selectedOutput != "") {
-        $('#mappingFactorInput').val(1.0);
-        $('#mappingOffsetInput').val(0.0);
-        $('#selectedOutput').text("output = "+selectedOutput);
-        $('#selectedInput').text("input = "+selectedInput);
-        $('#addMappingForm').toggle(true);
-    } else {
-        $('#addMappingForm').toggle(false);
-        if (selectedOutput != "") {
-            for (var i=0;i<hoverGlyphMap[0].length;i++) {
-                thisString = "";
-                for (var j=nodeGlyphMap[0][0][i][1].length-1;j>=0;j--) {
-                    thisString += "/"+nodeGlyphMap[0][0][i][1][j];
-                }
-                if (thisString == selectedOutput) {
-                    thisX = nodeGlyphMap[0][0][i][0][0];
-                    thisY = nodeGlyphMap[0][0][i][0][1];
-                    break;
+                if (j==xLength-1) {
+                    edgeGlyphMap.get(keys[i]).mouseOver = false;
                 }
             }
-            for (var i=0;i<hoverGlyphMap[1].length;i++) {
-                if (hoverGlyphMap[1][i]) {
-                    globalP.stroke(255,0,0);
-                    globalP.strokeWeight(5);
-                    globalP.noFill();
-                    globalP.bezier(thisX,
-                            thisY,
-                            cp1x,cp1y,
-                            cp2x,cp2y,
-                            nodeGlyphMap[1][0][i][0][0],
-                            nodeGlyphMap[1][0][i][0][1]);
-                    globalP.noStroke();
-                }
-            }
-
+        } else {
+            edgeGlyphMap.get(keys[i]).mouseOver = false;
         }
     }
+
 }
-*/
 
 function detectNodeClick(selectionEnabled) {
+    var sourcePaths = getCurrentOutputPathsFromNodes();
+    var destinationPaths = getCurrentInputPathsFromNodes();
+
+    var isSource = null;
+
     var keys = nodeGlyphMap.outputs.keys();
     for (var i=0;i<keys.length;i++) {
         if (nodeGlyphMap.outputs.get(keys[i]).mouseOver) {
-            descendOutputTree(keys[i]);
-            if (selectionEnabled) {
-                nodeGlyphMap.outputs.get(keys[i]).selected = true;
-            }
+            isSource = true;
         }
     }
 
     var keys = nodeGlyphMap.inputs.keys();
     for (var i=0;i<keys.length;i++) {
         if (nodeGlyphMap.inputs.get(keys[i]).mouseOver) {
-            descendInputTree(keys[i]);
-            if (selectionEnabled) {
-                nodeGlyphMap.inputs.get(keys[i]).selected = true;
+            isSource = false;
+        }
+    }
+
+    if (isSource == null) {
+        var keys = nodeGlyphMap.outputs.keys();
+        for (var i=0;i<keys.length;i++) {
+            selectedSource = "none";
+            nodeGlyphMap.outputs.get(keys[i]).selected = false;
+        }
+        var keys = nodeGlyphMap.inputs.keys();
+        for (var i=0;i<keys.length;i++) {
+            selectedDestination = "none";
+            nodeGlyphMap.inputs.get(keys[i]).selected = false;
+        }
+    } else if (isSource) {
+        var keys = nodeGlyphMap.outputs.keys();
+        for (var i=0;i<keys.length;i++) {
+            if (nodeGlyphMap.outputs.get(keys[i]).mouseOver) {
+                descendOutputTree(keys[i]);
+                if (selectionEnabled) {
+                    selectedSource = sourcePaths[i];
+                    nodeGlyphMap.outputs.get(keys[i]).selected = true;
+                }
+            } else {
+                nodeGlyphMap.outputs.get(keys[i]).selected = false;
+
             }
+        }
+    } else {
+        var keys = nodeGlyphMap.inputs.keys();
+        for (var i=0;i<keys.length;i++) {
+            if (nodeGlyphMap.inputs.get(keys[i]).mouseOver) {
+                descendInputTree(keys[i]);
+                if (selectionEnabled) {
+                    selectedDestination = destinationPaths[i];
+                    nodeGlyphMap.inputs.get(keys[i]).selected = true;
+                }
+            } else {
+                nodeGlyphMap.inputs.get(keys[i]).selected = false;
+            }
+        }
+    }
+
+    $('#selectedSource').text(selectedSource);
+    $('#selectedDestination').text(selectedDestination);
+}
+
+function detectEdgeClick() {
+    var select = false;
+
+    var keys = edgeGlyphMap.keys();
+    for (var i=0;i<keys.length;i++) {
+        if (edgeGlyphMap.get(keys[i]).mouseOver) {
+            select = true;
+        }
+    }
+
+    if (select) {
+        var keys = edgeGlyphMap.keys();
+        for (var i=0;i<keys.length;i++) {
+            if (edgeGlyphMap.get(keys[i]).mouseOver) {
+                selectedSource = edgeGlyphMap.get(keys[i]).outputChild;
+                selectedDestination = edgeGlyphMap.get(keys[i]).inputChild;
+                selectedEdge = keys[i];
+
+                $('#selectedSource').text(selectedSource);
+                $('#selectedDestination').text(selectedDestination);
+                $('#modeMenu').val(connections.get(keys[i]).mode);
+                $('#exprInput').val(connections.get(keys[i]).expression);
+                $('#mappingSourceMinInput').val(connections.get(keys[i]).range[0]);
+                $('#mappingSourceMaxInput').val(connections.get(keys[i]).range[1]);
+                $('#mappingDestMinInput').val(connections.get(keys[i]).range[2]);
+                $('#mappingDestMaxInput').val(connections.get(keys[i]).range[3]);
+                edgeGlyphMap.get(keys[i]).selected = true;
+            } else {
+                edgeGlyphMap.get(keys[i]).selected = false;
+            }
+        }
+    } else {
+        var keys = edgeGlyphMap.keys();
+        for (var i=0;i<keys.length;i++) {
+            //selectedDestination = "none";
+            //selectedSource = "none";
+            selectedEdge = null;
+
+            $('#modeMenu').val(0);
+            $('#exprInput').val("");
+            $('#mappingSourceMinInput').val("");
+            $('#mappingSourceMaxInput').val("");
+            $('#mappingDestMinInput').val("");
+            $('#mappingDestMaxInput').val("");
+            edgeGlyphMap.get(keys[i]).selected = false;
         }
     }
 }
 
-function detectEdgeClick() {
-    var keys = edgeGlyphMap.keys();
-    for (var i=0;i<keys.length;i++) {
-        if (edgeGlyphMap.get(keys[i]).mouseOver) {
-            $('#selectedOutput').text("source = "+edgeGlyphMap.get(keys[i]).outputChild);
-            $('#selectedInput').text("destination = "+edgeGlyphMap.get(keys[i]).inputChild);
-            $('#exprInput').val(connections.get(keys[i]).expression);
-            globalP.println(connections.get(keys[i]).expression);
-            $('#mappingSourceMinInput').val(connections.get(keys[i]).range[0]);
-            $('#mappingSourceMaxInput').val(connections.get(keys[i]).range[1]);
-            $('#mappingDestMinInput').val(connections.get(keys[i]).range[2]);
-            $('#mappingDestMaxInput').val(connections.get(keys[i]).range[3]);
-        }
-    }
+function clearConnectionForm() {
+    selectedDestination = "none";
+    selectedSource = "none";
+    selectedEdge = null;
+
+    $('#selectedSource').text(selectedSource);
+    $('#selectedDestination').text(selectedDestination);
+    $('#modeMenu').val(0);
+    $('#exprInput').val("");
+    $('#mappingSourceMinInput').val("");
+    $('#mappingSourceMaxInput').val("");
+    $('#mappingDestMinInput').val("");
+    $('#mappingDestMaxInput').val("");
+}
+
+function resetToRootLevel() {
+    outputBranchTrace = [];
+    inputBranchTrace = [];
+    outputLabelTrace = ["output signals"];
+    inputLabelTrace = ["input signals"];
 }
 
 function detectTraversalClick() {
@@ -468,11 +451,8 @@ function detectTraversalClick() {
 }
 
 function isOutputLeafNode(index) {
-    var outputPointer = levels[0][1];   
-    for (var i=0;i<outputBranchTrace.length;i++) {
-        outputPointer = outputPointer[outputBranchTrace[i]][1];
-    }
-    if (outputPointer[index] == 0) {
+    var keys = nodeGlyphMap.outputs.keys();
+    if (nodeGlyphMap.outputs.get(keys[index]).subNodes.length() == 0) {
         return true;
     } else {
         return false;
@@ -545,6 +525,26 @@ function getCurrentOutputPaths() {
 
     return outputSet;
 }
+function getCurrentOutputPathsFromNodes() {
+    var outputSet = nodeGlyphMap.outputs.keys();
+    var prefixString = "";
+
+    for (var i=1;i<outputLabelTrace.length;i++) {
+        if (outputLabelTrace[i][0] == "/") {
+            prefixString = outputLabelTrace[i];
+        } else {
+            prefixString += "/"+outputLabelTrace[i];
+        }
+    }
+
+    for (var i=0;i<outputSet.length;i++) {
+        if (outputSet[i][0] != "/") {
+            outputSet[i] = prefixString+"/"+outputSet[i];
+        }
+    }
+
+    return outputSet;
+}
 function descendOutputTree(key) {
     var keyPointer = levels[0][0];
     var outputPointer = levels[0][1];
@@ -578,11 +578,8 @@ function climbOutputTree(level) {
     updateGraph = true;
 }
 function isInputLeafNode(index) {
-    var inputPointer = levels[1][1];   
-    for (var i=0;i<inputBranchTrace.length;i++) {
-        inputPointer = inputPointer[inputBranchTrace[i]][1];
-    }
-    if (inputPointer[index] == 0) {
+    var keys = nodeGlyphMap.inputs.keys();
+    if (nodeGlyphMap.inputs.get(keys[index]).subNodes.length() == 0) {
         return true;
     } else {
         return false;
@@ -606,10 +603,8 @@ function getSubnodesForInputLevel() {
             for (var j=0;j<inputPointer[i][1].length;j++) {
                 if (inputPointer[i][1][j] == 0) {
                     isSignal.push({name:inputPaths[i]+"/"+inputPointer[i][0][j],isSignal:1});
-                    //isSignal.push(1);
                 } else {
                     isSignal.push({name:inputPaths[i]+"/"+inputPointer[i][0][j],isSignal:0});
-                    //isSignal.push(0);
                 }
             }
         }
@@ -634,6 +629,26 @@ function getCurrentInputLevelSet() {
 }
 function getCurrentInputPaths() {
     var inputSet = getCurrentInputLevelSet();
+    var prefixString = "";
+
+    for (var i=1;i<inputLabelTrace.length;i++) {
+        if (inputLabelTrace[i][0] == "/") {
+            prefixString = inputLabelTrace[i];
+        } else {
+            prefixString += "/"+inputLabelTrace[i];
+        }
+    }
+
+    for (var i=0;i<inputSet.length;i++) {
+        if (inputSet[i][0] != "/") {
+            inputSet[i] = prefixString+"/"+inputSet[i];
+        }
+    }
+
+    return inputSet;
+}
+function getCurrentInputPathsFromNodes() {
+    var inputSet = nodeGlyphMap.inputs.keys();
     var prefixString = "";
 
     for (var i=1;i<inputLabelTrace.length;i++) {
@@ -752,7 +767,7 @@ function drawTraversalGlyphs() {
     globalP.textSize(16);
     globalP.noStroke();
     for (var i=0;i<outputLabelTrace.length;i++) {
-        globalP.fill(0,230,0,210);
+        globalP.fill(0,230,0,230);
         globalP.rect(centerX1+80-200,centerY1-120+(i*32),200,28);
         globalP.fill(0);
         globalP.text(outputLabelTrace[i],centerX1+90-200,centerY1-100+(i*32));
@@ -761,7 +776,7 @@ function drawTraversalGlyphs() {
     }
 
     for (var i=0;i<inputLabelTrace.length;i++) {
-        globalP.fill(230,230,0,210);
+        globalP.fill(230,230,0,230);
         globalP.rect(centerX2-80,centerY2-120+(i*32),200,28);
         globalP.fill(0);
         globalP.text(inputLabelTrace[i],centerX2-70,centerY2-100+(i*32));
@@ -794,8 +809,8 @@ function updateNodeGlyphMap(signalsOnly) {
     var layoutX;
     var layoutY;
     var symbolWidth;
-    if (count <= 6) {
-        symbolWidth = 700/6;
+    if (count <= 5) {
+        symbolWidth = (700*Math.PI)/(2*( (Math.PI/Math.sin(Math.PI/(6-1))) + (Math.PI/2) ));
     } else {
         symbolWidth = (700*Math.PI)/(2*( (Math.PI/Math.sin(Math.PI/(count-1))) + (Math.PI/2) ));
     }
@@ -821,8 +836,8 @@ function updateNodeGlyphMap(signalsOnly) {
         var layoutX2;
         var layoutY2;
         var symbolWidth2;
-        if (count2 < 6) {
-            symbolWidth2 = symbolWidth/6;
+        if (count2 <= 5) {
+            symbolWidth2 = (symbolWidth*Math.PI)/(2*( (Math.PI/Math.sin(Math.PI/(6-1))) + (Math.PI/2) ));
         } else {
             symbolWidth2 = (symbolWidth*Math.PI)/(2*( (Math.PI/Math.sin(Math.PI/(count2-1))) + (Math.PI/2) ));
         }
@@ -850,8 +865,8 @@ function updateNodeGlyphMap(signalsOnly) {
         separationAngle = Math.PI/(count);
     }
 
-    if (count <= 6) {
-        symbolWidth = 700/6;
+    if (count <= 5) {
+        symbolWidth = (700*Math.PI)/(2*( (Math.PI/Math.sin(Math.PI/(6-1))) + (Math.PI/2) ));
     } else {
         symbolWidth = (700*Math.PI)/(2*( (Math.PI/Math.sin(Math.PI/(count-1))) + (Math.PI/2) ));
     }
@@ -877,8 +892,8 @@ function updateNodeGlyphMap(signalsOnly) {
         var layoutX2;
         var layoutY2;
         var symbolWidth2;
-        if (count2 <= 6) {
-            symbolWidth2 = symbolWidth/6;
+        if (count2 <= 5) {
+            symbolWidth2 = (symbolWidth*Math.PI)/(2*( (Math.PI/Math.sin(Math.PI/(6-1))) + (Math.PI/2) ));
         } else {
             symbolWidth2 = (symbolWidth*Math.PI)/(2*( (Math.PI/Math.sin(Math.PI/(count2-1))) + (Math.PI/2) ));
         }
@@ -968,7 +983,7 @@ function drawNodes() {
 
         subNodes = nodeGlyphMap.inputs.get(keys[i]).subNodes.keys();
         for (var j=0;j<subNodes.length;j++) {
-            if (subNodes[j].isSignal) {
+            if (nodeGlyphMap.inputs.get(keys[i]).subNodes.get(subNodes[j]).isSignal) {
                 globalP.noStroke();
                 globalP.fill(150,150,0);
             } else {
@@ -989,8 +1004,8 @@ function updateEdgeGlyphMap(signalsOnly) {
 
     edgeGlyphMap = new Assoc();
 
-    var outputSet = getCurrentOutputPaths();
-    var inputSet = getCurrentInputPaths();
+    var outputSet = getCurrentOutputPathsFromNodes();
+    var inputSet = getCurrentInputPathsFromNodes();
 
     var outputChildren = getSubnodesForOutputLevel();
     var inputChildren = getSubnodesForInputLevel();
@@ -1097,6 +1112,7 @@ function updateEdgeGlyphMap(signalsOnly) {
             edgeGlyphMap.get(keys[i]).cx2 = cx2;
             edgeGlyphMap.get(keys[i]).cy2 = cy2;
             edgeGlyphMap.get(keys[i]).mouseOver = false;
+            edgeGlyphMap.get(keys[i]).selected = false;
         }
     }
 
@@ -1119,10 +1135,13 @@ function drawEdges() {
             cy1 = edgeGlyphMap.get(keys[i]).cy1;
             cx2 = edgeGlyphMap.get(keys[i]).cx2;
             cy2 = edgeGlyphMap.get(keys[i]).cy2;
-            if (edgeGlyphMap.get(keys[i]).mouseOver) {
+
+            globalP.stroke(0);
+            if (edgeGlyphMap.get(keys[i]).selected) {
                 globalP.stroke(255,0,0);
-            } else {
-                globalP.stroke(0);
+            }
+            if (edgeGlyphMap.get(keys[i]).mouseOver) {
+                globalP.stroke(0,0,255);
             }
             globalP.bezier(x1,y1,cx1,cy1,cx2,cy2,x2,y2);
         }
@@ -1342,22 +1361,21 @@ $(document).ready(function() {
 			}
 		});
 
-        $('#okMapping').click(function() {
-            addConnection();
-            selectedInput = "";
-            selectedOutput = "";
+        $('#updateConnection').click(function() {
+                if (selectedSource != "none" &&
+                    selectedDestination != "none") {
+                    if (selectedEdge == null) {
+                        doConnect();
+                    } else {
+                        doModifyConnection();
+                    }
+                }
         });
-        $('#cancelMapping').click(function() {
-            selectedInput = "";
-            selectedOutput = "";
-        });
-
-        $('#okRemoveConnection').click(function() {
-            removeConnection();
-            $('#removeConnectionForm').toggle(false);
-        });
-        $('#cancelRemoveConnection').click(function() {
-            $('#removeConnectionForm').toggle(false);
+        $('#removeConnection').click(function() {
+                if (selectedSource != "none" &&
+                    selectedDestination != "none") {
+                    doDisconnect();
+                }
         });
 
 		$('#graphTab').click(function() {
@@ -1376,13 +1394,47 @@ $(document).ready(function() {
 		});
 
 		main();
-        activateListMode();
+        activateGraphMode();
 });
+
+function doConnect() {
+    var sourceDevice = selectedSource.split("/");
+    var destinationDevice = selectedDestination.split("/");
+    command.send('link', ["/"+sourceDevice[1],"/"+destinationDevice[1]]);
+    command.send('connect', [selectedSource,selectedDestination]);
+
+}
+function doDisconnect() {
+    var sourceDevice = selectedSource.split("/");
+    var destinationDevice = selectedDestination.split("/");
+    // TODO: check and unlink if no more connection
+    //command.send('unlink', ["/"+sourceDevice[1],"/"+destinationDevice[1]]);
+    command.send('disconnect', [selectedSource,selectedDestination]);
+}
+function doModifyConnection() {
+    var argCopy = $.extend(true,{},connections.get(selectedEdge));
+    argCopy['expression'] = encodeURIComponent($('#exprInput').val());
+    argCopy['range'][0] = parseFloat($('#mappingSourceMinInput').val());
+    argCopy['range'][1] = parseFloat($('#mappingSourceMaxInput').val());
+    argCopy['range'][2] = parseFloat($('#mappingDestMinInput').val());
+    argCopy['range'][3] = parseFloat($('#mappingDestMaxInput').val());
+    argCopy['mode'] = connectionModeCommands[connectionModes[parseInt($('#modeMenu').val())]];
+
+    command.send('set_connection',argCopy);
+
+    return argCopy;
+}
 
 devices = new Assoc();
 signals = new Assoc();
 links = new Assoc();
 connections = new Assoc();
+
+connectionModes = ["None", "Byp", "Line", "Expr", "Calib"];
+connectionModeCommands = {"Byp": 'bypass',
+                          "Line": 'linear',
+                          "Calib": 'calibrate',
+                          "Expr": 'expression'};
 
 /* The main program. */
 function main()
@@ -1396,10 +1448,12 @@ function main()
     command.register("new_device", function(cmd, args) {
         updateGraph = true;
         devices.add(args.name, args);
+        resetToRootLevel();
     });
     command.register("del_device", function(cmd, args) {
         updateGraph = true;
         devices.remove(args.name);
+        resetToRootLevel();
     });
 
     command.register("all_signals", function(cmd, args) {
@@ -1411,10 +1465,12 @@ function main()
     command.register("new_signal", function(cmd, args) {
             updateGraph = true;
             signals.add(args.device_name+args.name, args);
+            resetToRootLevel();
     });
     command.register("del_signal", function(cmd, args) {
             updateGraph = true;
             signals.remove(args.device_name+args.name);
+            resetToRootLevel();
     });
 
     command.register("all_links", function(cmd, args) {

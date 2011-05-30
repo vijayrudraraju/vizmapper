@@ -33,10 +33,21 @@
 	<div id="addMappingForm">
 		<p>connection from</p>
 		<br/>
-		<p id="selectedOutput">source = </p>
+		<p>source (x) =</p>
+		<p id="selectedSource">none</p>
 		<p>to</p>
-		<p id="selectedInput">destination = </p>
+		<p>destination (y) =</p>
+		<p id="selectedDestination">none</p>
 		<br/>
+        <p>mode</p>
+        <select id="modeMenu">
+            <option value="0">None</option>
+            <option value="1">Bypass</option>
+            <option value="2">Line</option>
+            <option value="3">Expression</option>
+            <option value="4">Calibrate</option>
+        </select>
+        <br/>
 		<p>expression</p>
 		<br/>
         <br/>

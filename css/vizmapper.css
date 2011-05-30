@@ -342,37 +342,27 @@ span {
 }
 #exprInput {
 	position:absolute;
-	top:205px;
-	left:50px;
-}
-#mappingFactorInput {
-	position:absolute;
-	top:270px;
+	top:320px;
 	left:10px;
-}
-#mappingOffsetInput {
-	position:absolute;
-	top:293px;
-	left:50px;
 }
 #mappingSourceMinInput {
 	position:absolute;
-	top:293px;
+	top:408px;
 	left:45px;
 }
 #mappingSourceMaxInput {
 	position:absolute;
-	top:293px;
+	top:408px;
 	left:230px;
 }
 #mappingDestMinInput {
 	position:absolute;
-	top:377px;
+	top:492px;
 	left:45px;
 }
 #mappingDestMaxInput {
 	position:absolute;
-	top:377px;
+	top:492px;
 	left:230px;
 }
 .mappingTemplate {

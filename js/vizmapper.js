@@ -51,14 +51,7 @@
 //	src_name
 //	dest_name
 
-function testAlgo() {
-}
-
-var numberOfItemsPerPage = 1;
-var signalPagePointer = 0;
-var mappingPagePointer = 0;
-
-var connectionGlyphMap = [];
+var edgeGlyphMap = [];
 var nodeGlyphMap = {outputs:new Assoc(),inputs:new Assoc()};
 
 // output labels, input labels
@@ -92,70 +85,24 @@ var inputBranchTrace = [];
 var outputLabelTrace = ["output signals"];
 var inputLabelTrace = ["input signals"];
 
+var updateGraph = true;
+
 function globalP(p) {
 	p.mouseMoved = function() {
 		mouseX = p.mouseX;
 		mouseY = p.mouseY;
-
-        /*
-		// hover detection of connections
-		if ($('#graphTab').hasClass('active')) {
-			// check mouse position against where points are on the bezier equation
-			// B(t) = ((1-t)^3)*(P0) + (3*(1-t)^2)*(t)*(P1) + (3*(1-t)*t^2)*(P2) + (t^3)*(P3)
-			for (var i=0;i<mappingVizMap[0].length;i++) {
-				xs = [mappingVizMap[0][i][1],mappingVizMap[0][i][3],
-					mappingVizMap[1][i][3],mappingVizMap[1][i][1]];
-				ys = [mappingVizMap[0][i][2],mappingVizMap[0][i][4],
-					mappingVizMap[1][i][4],mappingVizMap[1][i][2]];
-				xs.sort(function(a,b){return a-b;});
-				ys.sort(function(a,b){return a-b;});
-
-				if (mouseX<xs[3] && mouseX>xs[0] &&
-					mouseY<ys[3] && mouseY>ys[0]) {
-
-					var xLength = Math.abs(Math.round(mappingVizMap[0][i][1]-mappingVizMap[1][i][1]));
-					for (var j=0;j<xLength;j++) {
-						var t = j/xLength;
-						var microX = (Math.pow(1-t,3)*mappingVizMap[0][i][1]) +
-							(3*Math.pow(1-t,2)*t*mappingVizMap[0][i][3]) +
-							(3*(1-t)*Math.pow(t,2)*mappingVizMap[1][i][3]) +
-							(Math.pow(t,3)*mappingVizMap[1][i][1]);
-						var microY = (Math.pow(1-t,3)*mappingVizMap[0][i][2]) +
-							(3*Math.pow(1-t,2)*t*mappingVizMap[0][i][4]) +
-							(3*(1-t)*Math.pow(t,2)*mappingVizMap[1][i][4]) +
-							(Math.pow(t,3)*mappingVizMap[1][i][2]);
-
-						if (mouseX<microX+3 && mouseX>microX-3 &&
-								mouseY<microY+3 && mouseY>microY-3) {
-							hoverGlyphMap[2][i] = true;
-							break;
-						}
-						if (j == xLength-1) {
-							hoverGlyphMap[2][i] = false;
-						}
-					}
-
-				} else {
-					hoverGlyphMap[2][i] = false;
-				}
-				if (hoverGlyphMap[2][i]) {
-					for (var j=i+1;j<mappingVizMap[0].length;j++) {
-						hoverGlyphMap[2][j] = false;
-					}
-					break;
-				}
-			}
-		}
-        */
 	};
 
 	p.mouseClicked = function() {
 		if ($('#graphTab').hasClass('active')) {
             //console.log("click");
-            detectNodeClick();
+            detectNodeClick(false);
             detectTraversalClick();
             //console.log("click done");
-		}
+		} else if ($('#listTab').hasClass('active')) {
+            detectNodeClick(true);
+            detectEdgeClick();
+        }
         /*
         if ($('#graphTab').hasClass('active')) {
             // connection selection for removal
@@ -223,210 +170,69 @@ function globalP(p) {
 
 	p.draw = function() {
 
-		//if (!drawCounter) {
+        if (updateGraph) {
             updateActiveFilter();
             updateSignalMatches();
             updateLevelStructure();
-            //updateHoverGlyphMap();
-            /*
-			$.getJSON('/data/live.json', function(data) {
-					indexLiveData(data);
-					updateActiveFilter();
-                    updateSignalMatches();
-                    updateLevelStructure();
-                    updateHoverGlyphMap();
-					});
-            */
-		//}
 
-		if ($('#graphTab').hasClass('active')) {
-			$('html').toggleClass('graphColor',true);
-			$('html').toggleClass('listColor',false);
-			$('html').toggleClass('rawColor',false);
+            if ($('#graphTab').hasClass('active')) {
+                updateNodeGlyphMap(false);
+                updateEdgeGlyphMap(false);
+            } else {
+                updateNodeGlyphMap(true);
+                updateEdgeGlyphMap(true);
+            }
+
+            if (updateGraph == 2) {
+                updateGraph = false;
+            } else {
+                updateGraph = 2;
+            }
+        }
+
+        if ($('#graphTab').hasClass('active')) {
+            $('html').toggleClass('graphColor',true);
+            $('html').toggleClass('listColor',false);
+            $('html').toggleClass('rawColor',false);
             $('#signalsFile').toggle(false);
             $('#mappingsFile').toggle(false);
-           
-            //console.log("draw");
-                
-			p.background(207);
-            drawBackground();
-            //console.log("draw background done");
-            updateNodeGlyphMap();
-            updateHoverState();
 
+            p.background(207);
+            drawBackground();
+            updateNodeMouseState();
             drawNodes();
             drawEdges();
-            //console.log("draw edges done");
-            //console.log("update hover state done");
             drawListGlyphs();
-            //console.log("update list glyphs done");
             drawTraversalGlyphs();
-            //drawConnectionProcess();
-            //drawMouseFeedback();
 
-            //console.log("draw done");
-		} else if ($('#listTab').hasClass('active')) {
-			$('html').toggleClass('graphColor',false);
-			$('html').toggleClass('listColor',true);
-			$('html').toggleClass('rawColor',false);
-			p.background(80);
-            drawList();
-		} else {
-			$('html').toggleClass('graphColor',false);
-			$('html').toggleClass('listColor',false);
-			$('html').toggleClass('rawColor',true);
-			p.background(220);
-			drawRaw();
-		}
+        } else if ($('#listTab').hasClass('active')) {
+            $('html').toggleClass('graphColor',false);
+            $('html').toggleClass('listColor',true);
+            $('html').toggleClass('rawColor',false);
 
-		if (debugMode) {
-		}
+            p.background(207,207,207);
+            drawBackground();
+            updateNodeMouseState();
+            updateEdgeMouseState();
+            drawNodes();
+            drawEdges();
 
-		drawCounter++;
-		drawCounter = drawCounter % 240;
+        } else {
+            $('html').toggleClass('graphColor',false);
+            $('html').toggleClass('listColor',false);
+            $('html').toggleClass('rawColor',true);
+            p.background(220);
+            drawRaw();
+        }
 
+        drawCounter++;
+        drawCounter = drawCounter % 240;
 	};
 }
 
-function updateNodeGlyphMap() {
-    nodeGlyphMap = {outputs:new Assoc(), inputs:new Assoc()};
-
-    var outputSet = getCurrentOutputLevelSet();
-    var inputSet = getCurrentInputLevelSet();
-
-    var outputChildSet = getNumberOfChildNodesForOutputLevel();
-    var inputChildSet = getNumberOfChildNodesForInputLevel();
-
-    // outputs
-    var centerX = 550;
-    var centerY = 45+(760/2);
-
-    var count = outputSet.length;
-
-    var separationAngle;
-    if (count > 1) {
-        separationAngle = Math.PI/(count-1);
-    } else {
-        separationAngle = Math.PI/(count);
-    }
-
-    var layoutAngle;
-
-    var layoutX;
-    var layoutY;
-    var symbolWidth;
-    if (count <= 6) {
-        symbolWidth = 700/6;
-    } else {
-        symbolWidth = (700*Math.PI)/(2*( (Math.PI/Math.sin(Math.PI/(count-1))) + (Math.PI/2) ));
-    }
-    var layoutRadius = (700/2)-(symbolWidth/2);
-
-    for (var i=0;i<count;i++) {
-        layoutAngle = (3*Math.PI/2) - i*separationAngle;
-
-        layoutX = centerX + (layoutRadius*Math.cos(layoutAngle));
-        layoutY = centerY + (layoutRadius*Math.sin(layoutAngle));
-
-        //var count2 = outputChildSet[i].numGroups+outputChildSet[i].numSignals;
-        var count2 = outputChildSet[i].length;
-
-        var separationAngle2;
-        if (count2 > 1) {
-            separationAngle2 = Math.PI/(count2-1);
-        } else {
-            separationAngle2 = Math.PI/(count2);
-        }
-
-        var layoutAngle2;
-
-        var layoutX2;
-        var layoutY2;
-        var symbolWidth2;
-        if (count2 < 6) {
-            symbolWidth2 = symbolWidth/6;
-        } else {
-            symbolWidth2 = (symbolWidth*Math.PI)/(2*( (Math.PI/Math.sin(Math.PI/(count2-1))) + (Math.PI/2) ));
-        }
-        var layoutRadius2 = (symbolWidth/2)-(symbolWidth2/2);
-
-        //var subNodes = [];
-        var subNodes = new Assoc();
-        for (var j=0;j<count2;j++) {
-            layoutAngle2 = (3*Math.PI/2) - j*separationAngle2;
-            layoutX2 = layoutX + (layoutRadius2*Math.cos(layoutAngle2));
-            layoutY2 = layoutY + (layoutRadius2*Math.sin(layoutAngle2));
-            //subNodes.push({layoutX:layoutX2,layoutY:layoutY2,symbolWidth:symbolWidth2,isSignal:outputChildSet[i][j]});
-            subNodes.add(outputChildSet[i][j].name,{layoutX:layoutX2,layoutY:layoutY2,symbolWidth:symbolWidth2,isSignal:outputChildSet[i][j].isSignal});
-        }
-
-        nodeGlyphMap.outputs.add(outputSet[i], {layoutX:layoutX,layoutY:layoutY,symbolWidth:symbolWidth,mouseOver:false,numSignals:outputChildSet[i].numSignals,numGroups:outputChildSet[i].numGroups,subNodes:subNodes});
-    }
-
-    // inputs
-    centerX = screenWidth-550;
-
-    count = inputSet.length;
-
-    if (count > 1) {
-        separationAngle = Math.PI/(count-1);
-    } else {
-        separationAngle = Math.PI/(count);
-    }
-
-    if (count <= 6) {
-        symbolWidth = 700/6;
-    } else {
-        symbolWidth = (700*Math.PI)/(2*( (Math.PI/Math.sin(Math.PI/(count-1))) + (Math.PI/2) ));
-    }
-    layoutRadius = (700/2)-(symbolWidth/2);
-
-    for (var i=0;i<count;i++) {
-        layoutAngle = i*separationAngle + (3*Math.PI/2);
-
-        layoutX = centerX + (layoutRadius*Math.cos(layoutAngle));
-        layoutY = centerY + (layoutRadius*Math.sin(layoutAngle));
-
-        //var count2 = inputChildSet[i].numGroups+inputChildSet[i].numSignals;
-        var count2 = inputChildSet[i].length;
-
-        var separationAngle2;
-        if (count2 > 1) {
-            separationAngle2 = Math.PI/(count2-1);
-        } else {
-            separationAngle2 = Math.PI/(count2);
-        }
-
-        var layoutAngle2;
-
-        var layoutX2;
-        var layoutY2;
-        var symbolWidth2;
-        if (count2 <= 6) {
-            symbolWidth2 = symbolWidth/6;
-        } else {
-            symbolWidth2 = (symbolWidth*Math.PI)/(2*( (Math.PI/Math.sin(Math.PI/(count2-1))) + (Math.PI/2) ));
-        }
-        var layoutRadius2 = (symbolWidth/2)-(symbolWidth2/2);
-
-        //var subNodes = [];
-        var subNodes = new Assoc();
-        for (var j=0;j<count2;j++) {
-            layoutAngle2 = j*separationAngle2 + (3*Math.PI/2);
-            layoutX2 = layoutX + (layoutRadius2*Math.cos(layoutAngle2));
-            layoutY2 = layoutY + (layoutRadius2*Math.sin(layoutAngle2));
-            //subNodes.push({layoutX:layoutX2,layoutY:layoutY2,symbolWidth:symbolWidth2,isSignal:inputChildSet[i][j]});
-            subNodes.add(inputChildSet[i][j].name,{layoutX:layoutX2,layoutY:layoutY2,symbolWidth:symbolWidth2,isSignal:inputChildSet[i][j].isSignal});
-        }
-
-        nodeGlyphMap.inputs.add(inputSet[i], {layoutX:layoutX,layoutY:layoutY,symbolWidth:symbolWidth,mouseOver:false,numSignals:inputChildSet[i].numSignals,numGroups:inputChildSet[i].numGroups,subNodes:subNodes});
-    }
-
-}
-
-function updateHoverState() {
+function updateNodeMouseState() {
     // hover detection of source nodes and destination nodes 
-    if ($('#graphTab').hasClass('active')) {
+    if ($('#graphTab').hasClass('active') || $('#listTab').hasClass('active')) {
         var thisX = 0; // input,level,container,drawingNumbers,thisX
         var thisY = 0;
         var thisRadius = 0;
@@ -460,6 +266,53 @@ function updateHoverState() {
     }
 }
 
+function updateEdgeMouseState() {
+    // hover detection of connections
+    // check mouse position against where points are on the bezier equation
+    // B(t) = ((1-t)^3)*(P0) + (3*(1-t)^2)*(t)*(P1) + (3*(1-t)*t^2)*(P2) + (t^3)*(P3)
+    var keys = edgeGlyphMap.keys();
+    var x1, y1, x2, y2;
+    var cx1, cy1, cx2, cy2;
+    var xs;
+    var ys;
+    for (var i=0;i<keys.length;i++) {
+        x1 = edgeGlyphMap.get(keys[i]).x1;
+        y1 = edgeGlyphMap.get(keys[i]).y1;
+        x2 = edgeGlyphMap.get(keys[i]).x2;
+        y2 = edgeGlyphMap.get(keys[i]).y2;
+        cx1 = edgeGlyphMap.get(keys[i]).cx1;
+        cy1 = edgeGlyphMap.get(keys[i]).cy1;
+        cx2 = edgeGlyphMap.get(keys[i]).cx2;
+        cy2 = edgeGlyphMap.get(keys[i]).cy2;
+        xs = [x1,cx1,cx2,x2];
+        ys = [y1,cy1,cy2,y2];
+        xs.sort(function(a,b){return a-b;});
+        ys.sort(function(a,b){return a-b;});
+
+        if (mouseX<xs[3] && mouseX>xs[0] &&
+                mouseY<ys[3] && mouseY>ys[0]) {
+            var xLength = Math.abs(Math.round(x1-x2));
+            for (var j=0;j<xLength;j++) {
+                var t = j/xLength;
+
+                var microX = (Math.pow(1-t,3)*x1) +
+                    (3*Math.pow(1-t,2)*t*cx1) +
+                    (3*(1-t)*Math.pow(t,2)*cx2) +
+                    (Math.pow(t,3)*x2);
+                var microY = (Math.pow(1-t,3)*y1) +
+                    (3*Math.pow(1-t,2)*t*cy1) +
+                    (3*(1-t)*Math.pow(t,2)*cy2) +
+                    (Math.pow(t,3)*y2);
+                if (mouseX<microX+4 && mouseX>microX-4 &&
+                        mouseY<microY+4 && mouseY>microY-4) {
+                    edgeGlyphMap.get(keys[i]).mouseOver = true;
+                    break;
+                }
+            }
+        }
+    }
+
+}
 
 function addConnection() {
     // add
@@ -494,101 +347,6 @@ function removeConnection() {
     }
 
     updateActiveFilter();
-}
-
-
-
-function drawMouseFeedback() {
-    // mouse over connection glyph feedback
-    var thisX = 0;
-    var thisY = 0;
-    var thisWidth = 500;
-    var thisHeight = 75;
-    thisX = mouseX+20;
-    thisY = mouseY+20;
-    if (thisX+thisWidth>screenWidth) {
-        thisX = mouseX-20-thisWidth;
-    }
-    if (thisY+thisHeight>screenHeight) {
-        thisY = mouseY-20-thisHeight;
-    }
-
-/*
-    for (var i=0;i<hoverGlyphMap[2].length;i++) {
-        if (hoverGlyphMap[2][i]) {
-            globalP.noStroke();
-            globalP.fill(255);
-            globalP.rect(thisX,thisY,thisWidth,thisHeight);
-            globalP.fill(0);
-            globalP.textSize(16);
-            globalP.textAlign(globalP.LEFT);
-
-            globalP.text("output = "+tables[1][i].output[2],thisX+10,thisY+20);
-            globalP.text("input = "+tables[1][i].input[2],thisX+10,thisY+40);
-            globalP.text(tables[1][i].expression,thisX+10,thisY+60);
-        }
-    }
-    */
-
-    // mouse over signal glyph feedback
-    var thisString = "";
-    globalP.fill(0);
-    globalP.textSize(16);
-    thisString = "active output";
-    globalP.textAlign(globalP.LEFT);
-    //globalP.text(thisString,10,80);
-    thisString = "active input";
-    globalP.textAlign(globalP.RIGHT);
-    //globalP.text(thisString,1270,80);
-
-    thisHeight = 60;
-    var textX = mouseX+40;
-    var textY = mouseY+20;
-    thisX = mouseX+20+(thisWidth/2);
-    thisY = mouseY+20+(thisHeight/2);
-    if (thisX+thisWidth>screenWidth) {
-        thisX = mouseX-20-thisWidth+(thisWidth/2);
-        textX = mouseX-10-thisWidth;
-    }
-    if (thisY+thisHeight>screenHeight) {
-        thisY = mouseY-20-thisHeight+(thisHeight/2);
-        textY = mouseY-20-thisHeight;
-    }
-
-    // output mouseover feedback
-    var keys = nodeGlyphMap.outputs.keys();
-    for (var i=0;i<keys.length;i++) {
-        thisString = keys[i];
-
-        if (nodeGlyphMap.outputs.get(thisString).mouseOver) {
-            globalP.noStroke();
-            globalP.fill(0);
-            globalP.ellipse(thisX,thisY,thisWidth,thisHeight);
-            globalP.fill(255);
-            globalP.textSize(16);
-            globalP.textAlign(globalP.LEFT);
-
-            globalP.text(thisString,textX+20,textY+34);
-        }
-    }
-
-    // input mouseover feedback
-    var keys = nodeGlyphMap.inputs.keys();
-    for (var i=0;i<keys.length;i++) {
-        thisString = keys[i];
-
-        if (nodeGlyphMap.inputs.get(thisString).mouseOver) {
-            globalP.noStroke();
-            globalP.fill(0);
-            globalP.ellipse(thisX,thisY,thisWidth,thisHeight);
-            globalP.fill(255);
-            globalP.textSize(16);
-            globalP.textAlign(globalP.LEFT);
-
-            globalP.text(thisString,textX+20,textY+34);
-        }
-    }
-
 }
 
 /*
@@ -643,44 +401,42 @@ function drawConnectionProcess() {
 }
 */
 
-function detectNodeClick() {
-    var thisX = 0;
-    var thisY = 0;
-    var thisRadius = 0;
-
+function detectNodeClick(selectionEnabled) {
     var keys = nodeGlyphMap.outputs.keys();
     for (var i=0;i<keys.length;i++) {
-        thisX = nodeGlyphMap.outputs.get(keys[i]).layoutX;
-        thisY = nodeGlyphMap.outputs.get(keys[i]).layoutY;
-        thisRadius = nodeGlyphMap.outputs.get(keys[i]).symbolWidth/2;
-        if (mouseX<thisX+thisRadius && mouseX>thisX-thisRadius &&
-                mouseY<thisY+thisRadius && mouseY>thisY-thisRadius) {
+        if (nodeGlyphMap.outputs.get(keys[i]).mouseOver) {
             descendOutputTree(keys[i]);
+            if (selectionEnabled) {
+                nodeGlyphMap.outputs.get(keys[i]).selected = true;
+            }
         }
     }
 
     var keys = nodeGlyphMap.inputs.keys();
     for (var i=0;i<keys.length;i++) {
-        thisX = nodeGlyphMap.inputs.get(keys[i]).layoutX;
-        thisY = nodeGlyphMap.inputs.get(keys[i]).layoutY;
-        thisRadius = nodeGlyphMap.inputs.get(keys[i]).symbolWidth/2;
-        if (mouseX<thisX+thisRadius && mouseX>thisX-thisRadius &&
-                mouseY<thisY+thisRadius && mouseY>thisY-thisRadius) {
+        if (nodeGlyphMap.inputs.get(keys[i]).mouseOver) {
             descendInputTree(keys[i]);
+            if (selectionEnabled) {
+                nodeGlyphMap.inputs.get(keys[i]).selected = true;
+            }
         }
     }
-    /*
-    for (var i=0;i<nodeGlyphMap[1].length;i++) {
-        thisX = nodeGlyphMap[1][i][0][0];
-        thisY = nodeGlyphMap[1][i][0][1];
-        thisRadius = nodeGlyphMap[1][i][0][2]/2;
-        if (mouseX<thisX+thisRadius && mouseX>thisX-thisRadius &&
-                mouseY<thisY+thisRadius && mouseY>thisY-thisRadius) {
-            descendInputTree(i);
-            //updateHoverGlyphMap();
+}
+
+function detectEdgeClick() {
+    var keys = edgeGlyphMap.keys();
+    for (var i=0;i<keys.length;i++) {
+        if (edgeGlyphMap.get(keys[i]).mouseOver) {
+            $('#selectedOutput').text("source = "+edgeGlyphMap.get(keys[i]).outputChild);
+            $('#selectedInput').text("destination = "+edgeGlyphMap.get(keys[i]).inputChild);
+            $('#exprInput').val(connections.get(keys[i]).expression);
+            globalP.println(connections.get(keys[i]).expression);
+            $('#mappingSourceMinInput').val(connections.get(keys[i]).range[0]);
+            $('#mappingSourceMaxInput').val(connections.get(keys[i]).range[1]);
+            $('#mappingDestMinInput').val(connections.get(keys[i]).range[2]);
+            $('#mappingDestMaxInput').val(connections.get(keys[i]).range[3]);
         }
     }
-    */
 }
 
 function detectTraversalClick() {
@@ -697,7 +453,6 @@ function detectTraversalClick() {
         if (mouseX<thisX+thisWidth && mouseX>thisX &&
                 mouseY<thisY+thisHeight && mouseY>thisY) {
             climbOutputTree(i);
-            //updateHoverGlyphMap();
         }
     }
     for (var i=0;i<traversalGlyphMap[1].length;i++) {
@@ -708,7 +463,6 @@ function detectTraversalClick() {
         if (mouseX<thisX+thisWidth && mouseX>thisX &&
                 mouseY<thisY+thisHeight && mouseY>thisY) {
             climbInputTree(i);
-            //updateHoverGlyphMap();
         }
     }
 }
@@ -724,7 +478,7 @@ function isOutputLeafNode(index) {
         return false;
     }
 }
-function getNumberOfChildNodesForOutputLevel() {
+function getSubnodesForOutputLevel() {
     var numbers = [];
     var outputPointer = levels[0][1];
     var outputPaths = getCurrentOutputPaths();
@@ -809,8 +563,8 @@ function descendOutputTree(key) {
         return;
     } else {
         outputBranchTrace.push(index); 
-        //outputLabelTrace.push(nodeGlyphMap[0][index][1]);
         outputLabelTrace.push(key);
+        updateGraph = true;
     }
 }
 function climbOutputTree(level) {
@@ -821,6 +575,7 @@ function climbOutputTree(level) {
         outputBranchTrace = outputBranchTrace.slice(0,level);   
         outputLabelTrace = outputLabelTrace.slice(0,level+1);
     }
+    updateGraph = true;
 }
 function isInputLeafNode(index) {
     var inputPointer = levels[1][1];   
@@ -833,7 +588,7 @@ function isInputLeafNode(index) {
         return false;
     }
 }
-function getNumberOfChildNodesForInputLevel() {
+function getSubnodesForInputLevel() {
     var numbers = [];
     var inputPointer = levels[1][1];
     var inputPaths = getCurrentInputPaths();
@@ -916,6 +671,7 @@ function descendInputTree(key) {
     } else {
         inputBranchTrace.push(index); 
         inputLabelTrace.push(key);
+        updateGraph = true;
     }
 }
 function climbInputTree(level) {
@@ -926,10 +682,31 @@ function climbInputTree(level) {
         inputBranchTrace = inputBranchTrace.slice(0,level);   
         inputLabelTrace = inputLabelTrace.slice(0,level+1);
     }
+    updateGraph = true;
 }
 
 function drawBackground() {
     var backgroundWidth = 700;
+
+    if ($('#graphTab').hasClass('active')) {
+        centerX1 = 550;
+        centerY1 = 45+(760/2);
+        centerX2 = screenWidth-550;
+        centerY2 = 45+(760/2);
+
+        globalP.noStroke();
+        globalP.fill(187,187,187);
+        globalP.rect(10,150,180,screenHeight+150);
+
+        globalP.noStroke();
+        globalP.fill(187,187,187);
+        globalP.rect(screenWidth-190,150,180,screenHeight+150);
+    } else if ($('#listTab').hasClass('active')) {
+        centerX1 = 550+190;
+        centerY1 = 45+(760/2);
+        centerX2 = screenWidth-550+190;
+        centerY2 = 45+(760/2);
+    }
 
     globalP.strokeWeight(1);
     globalP.stroke(0,255,0);
@@ -952,11 +729,6 @@ function drawListGlyphs() {
     globalP.noStroke();
     for (var i=0;i<outputSet.length;i++) {
         globalP.fill(0,200,130,230);
-        /*
-        if (hoverGlyphMap[0][i]) {
-            globalP.rect(0,150+(i*32),200,28);
-        }
-        */
         if (nodeGlyphMap.outputs.get(outputSet[i]).mouseOver) {
             globalP.rect(0,150+(i*32),200,28);
         }
@@ -965,11 +737,6 @@ function drawListGlyphs() {
     }
     for (var i=0;i<inputSet.length;i++) {
         globalP.fill(180,180,100,230);
-        /*
-        if (hoverGlyphMap[1][i]) {
-            globalP.rect(screenWidth-200,150+(i*32),200,28);
-        }
-        */
         if (nodeGlyphMap.inputs.get(inputSet[i]).mouseOver) {
             globalP.rect(screenWidth-200,150+(i*32),200,28);
         }
@@ -1003,6 +770,135 @@ function drawTraversalGlyphs() {
     }
 }
 
+function updateNodeGlyphMap(signalsOnly) {
+    nodeGlyphMap = {outputs:new Assoc(), inputs:new Assoc()};
+
+    var outputSet = getCurrentOutputLevelSet();
+    var inputSet = getCurrentInputLevelSet();
+
+    var outputChildSet = getSubnodesForOutputLevel();
+    var inputChildSet = getSubnodesForInputLevel();
+
+    // outputs
+    var count = outputSet.length;
+
+    var separationAngle;
+    if (count > 1) {
+        separationAngle = Math.PI/(count-1);
+    } else {
+        separationAngle = Math.PI/(count);
+    }
+
+    var layoutAngle;
+
+    var layoutX;
+    var layoutY;
+    var symbolWidth;
+    if (count <= 6) {
+        symbolWidth = 700/6;
+    } else {
+        symbolWidth = (700*Math.PI)/(2*( (Math.PI/Math.sin(Math.PI/(count-1))) + (Math.PI/2) ));
+    }
+    var layoutRadius = (700/2)-(symbolWidth/2);
+
+    for (var i=0;i<count;i++) {
+        layoutAngle = (3*Math.PI/2) - i*separationAngle;
+
+        layoutX = centerX1 + (layoutRadius*Math.cos(layoutAngle));
+        layoutY = centerY1 + (layoutRadius*Math.sin(layoutAngle));
+
+        var count2 = outputChildSet[i].length;
+
+        var separationAngle2;
+        if (count2 > 1) {
+            separationAngle2 = Math.PI/(count2-1);
+        } else {
+            separationAngle2 = Math.PI/(count2);
+        }
+
+        var layoutAngle2;
+
+        var layoutX2;
+        var layoutY2;
+        var symbolWidth2;
+        if (count2 < 6) {
+            symbolWidth2 = symbolWidth/6;
+        } else {
+            symbolWidth2 = (symbolWidth*Math.PI)/(2*( (Math.PI/Math.sin(Math.PI/(count2-1))) + (Math.PI/2) ));
+        }
+        var layoutRadius2 = (symbolWidth/2)-(symbolWidth2/2);
+
+        var subNodes = new Assoc();
+        for (var j=0;j<count2;j++) {
+            layoutAngle2 = (3*Math.PI/2) - j*separationAngle2;
+            layoutX2 = layoutX + (layoutRadius2*Math.cos(layoutAngle2));
+            layoutY2 = layoutY + (layoutRadius2*Math.sin(layoutAngle2));
+            subNodes.add(outputChildSet[i][j].name,{layoutX:layoutX2,layoutY:layoutY2,symbolWidth:symbolWidth2,isSignal:outputChildSet[i][j].isSignal});
+        }
+
+        if (!signalsOnly || subNodes.length() == 0) {
+            nodeGlyphMap.outputs.add(outputSet[i], {layoutX:layoutX,layoutY:layoutY,symbolWidth:symbolWidth,mouseOver:false,subNodes:subNodes,selected:false});
+        }
+    }
+
+    // inputs
+    count = inputSet.length;
+
+    if (count > 1) {
+        separationAngle = Math.PI/(count-1);
+    } else {
+        separationAngle = Math.PI/(count);
+    }
+
+    if (count <= 6) {
+        symbolWidth = 700/6;
+    } else {
+        symbolWidth = (700*Math.PI)/(2*( (Math.PI/Math.sin(Math.PI/(count-1))) + (Math.PI/2) ));
+    }
+    layoutRadius = (700/2)-(symbolWidth/2);
+
+    for (var i=0;i<count;i++) {
+        layoutAngle = i*separationAngle + (3*Math.PI/2);
+
+        layoutX = centerX2 + (layoutRadius*Math.cos(layoutAngle));
+        layoutY = centerY2 + (layoutRadius*Math.sin(layoutAngle));
+
+        var count2 = inputChildSet[i].length;
+
+        var separationAngle2;
+        if (count2 > 1) {
+            separationAngle2 = Math.PI/(count2-1);
+        } else {
+            separationAngle2 = Math.PI/(count2);
+        }
+
+        var layoutAngle2;
+
+        var layoutX2;
+        var layoutY2;
+        var symbolWidth2;
+        if (count2 <= 6) {
+            symbolWidth2 = symbolWidth/6;
+        } else {
+            symbolWidth2 = (symbolWidth*Math.PI)/(2*( (Math.PI/Math.sin(Math.PI/(count2-1))) + (Math.PI/2) ));
+        }
+        var layoutRadius2 = (symbolWidth/2)-(symbolWidth2/2);
+
+        var subNodes = new Assoc();
+        for (var j=0;j<count2;j++) {
+            layoutAngle2 = j*separationAngle2 + (3*Math.PI/2);
+            layoutX2 = layoutX + (layoutRadius2*Math.cos(layoutAngle2));
+            layoutY2 = layoutY + (layoutRadius2*Math.sin(layoutAngle2));
+            subNodes.add(inputChildSet[i][j].name,{layoutX:layoutX2,layoutY:layoutY2,symbolWidth:symbolWidth2,isSignal:inputChildSet[i][j].isSignal});
+        }
+
+        if (!signalsOnly || subNodes.length() == 0) {
+            nodeGlyphMap.inputs.add(inputSet[i], {layoutX:layoutX,layoutY:layoutY,symbolWidth:symbolWidth,mouseOver:false,subNodes:subNodes,selected:false});
+        }
+    }
+
+}
+
 function drawNodes() {
     var keys = nodeGlyphMap.outputs.keys();
     var thisX;
@@ -1023,6 +919,9 @@ function drawNodes() {
             globalP.strokeWeight(5);
             globalP.stroke(0,200,0);
             globalP.noFill();
+        }
+        if (nodeGlyphMap.outputs.get(keys[i]).selected) {
+            globalP.fill(255,0,0,230);
         }
         if (nodeGlyphMap.outputs.get(keys[i]).mouseOver) {
             globalP.fill(0,200,130,230);
@@ -1059,6 +958,9 @@ function drawNodes() {
             globalP.stroke(200,200,0);
             globalP.noFill();
         }
+        if (nodeGlyphMap.inputs.get(keys[i]).selected) {
+            globalP.fill(255,0,0,230);
+        }
         if (nodeGlyphMap.inputs.get(keys[i]).mouseOver) {
             globalP.fill(180,180,100,230);
         }
@@ -1078,164 +980,20 @@ function drawNodes() {
                     nodeGlyphMap.inputs.get(keys[i]).subNodes.get(subNodes[j]).layoutY,
                     nodeGlyphMap.inputs.get(keys[i]).subNodes.get(subNodes[j]).symbolWidth,
                     nodeGlyphMap.inputs.get(keys[i]).subNodes.get(subNodes[j]).symbolWidth);
-            //globalP.ellipse(subNodes[j].layoutX,subNodes[j].layoutY,subNodes[j].symbolWidth,subNodes[j].symbolWidth);
         }
     }
-    /*
-    nodeGlyphMap = {outputs:new Assoc(), inputs:new Assoc()};
-
-    var outputSet = getCurrentOutputLevelSet();
-    var inputSet = getCurrentInputLevelSet();
-
-    var outputChildSet = getNumberOfChildNodesForOutputLevel();
-    var inputChildSet = getNumberOfChildNodesForInputLevel();
-
-    // outputs
-    var layoutAngle;
-    var layoutX;
-    var layoutY;
-    var separationAngle;
-    var symbolWidth;
-    var centerX = 550;
-    var centerY = 45+(760/2);
-
-    var count = outputSet.length;
-    if (count > 1) {
-        separationAngle = Math.PI/(count-1);
-    } else {
-        separationAngle = Math.PI/(count);
-    }
-    if (count <= 6) {
-        //symbolWidth = (300*3.1)/6;
-        symbolWidth = 700/6;
-    } else {
-        //symbolWidth = (300*3.1)/count;
-        symbolWidth = (700*Math.PI)/(2*( (Math.PI/Math.sin(Math.PI/(count-1))) + (Math.PI/2) ));
-    }
-    var layoutRadius = (700/2)-(symbolWidth/2);
-
-    for (var i=0;i<count;i++) {
-        layoutAngle = (3*Math.PI/2) - i*separationAngle;
-        layoutX = centerX + (layoutRadius*Math.cos(layoutAngle));
-        layoutY = centerY + (layoutRadius*Math.sin(layoutAngle));
-
-        globalP.noStroke();
-        if (isOutputLeafNode(i)) {
-            globalP.fill(0);
-            globalP.ellipse(layoutX,layoutY,symbolWidth-40,symbolWidth-40);
-        } else {
-            globalP.fill(0,255,0);
-            globalP.ellipse(layoutX,layoutY,symbolWidth,symbolWidth);
-        }
-
-        var layoutAngle2;
-        var layoutX2;
-        var layoutY2;
-        var separationAngle2;
-        var symbolWidth2;
-        var count2 = outputChildSet[i].numGroups+outputChildSet[i].numSignals;
-        if (count2 > 1) {
-            separationAngle2 = Math.PI/(count2-1);
-        } else {
-            separationAngle2 = Math.PI/(count2);
-        }
-
-        if (count2 <= 6) {
-            //var symbolWidth2 = ((symbolWidth/2-30)*3.1)/count2;
-            symbolWidth2 = symbolWidth/6;
-        } else {
-            //var symbolWidth2 = ((symbolWidth/2-20)*3.1)/count2;
-            symbolWidth2 = (symbolWidth*Math.PI)/(2*( (Math.PI/Math.sin(Math.PI/(count2-1))) + (Math.PI/2) ));
-        }
-
-        var layoutRadius2 = (symbolWidth/2)-(symbolWidth2/2);
-        globalP.fill(0);
-
-        for (var j=0;j<count2;j++) {
-            layoutAngle2 = (3*Math.PI/2) - j*separationAngle2;
-            layoutX2 = layoutX + (layoutRadius2*Math.cos(layoutAngle2));
-            layoutY2 = layoutY + (layoutRadius2*Math.sin(layoutAngle2));
-
-            globalP.ellipse(layoutX2,layoutY2,symbolWidth2,symbolWidth2);
-        }
-
-        nodeGlyphMap.outputs.add(outputSet[i], {layoutX:layoutX,layoutY:layoutY,symbolWidth:symbolWidth,mouseOver:false});
-    }
-
-    // inputs
-    centerX = screenWidth-550;
-    count = inputSet.length;
-    if (count > 1) {
-        separationAngle = Math.PI/(count-1);
-    } else {
-        separationAngle = Math.PI/(count);
-    }
-    if (count <= 6) {
-        //var symbolWidth = ((700/2)*2.7)/count;
-        symbolWidth = 700/6;
-    } else {
-        //var symbolWidth = ((700/2)*2.7)/count;
-        symbolWidth = (700*Math.PI)/(2*( (Math.PI/Math.sin(Math.PI/(count-1))) + (Math.PI/2) ));
-    }
-    layoutRadius = (700/2)-(symbolWidth/2);
-
-    for (var i=0;i<count;i++) {
-        layoutAngle = i*separationAngle + (3*Math.PI/2);
-        layoutX = centerX + (layoutRadius*Math.cos(layoutAngle));
-        layoutY = centerY + (layoutRadius*Math.sin(layoutAngle));
-
-        globalP.noStroke();
-        if (isInputLeafNode(i)) {
-            globalP.fill(0);
-        } else {
-            globalP.fill(255,255,0);
-        }
-        globalP.ellipse(layoutX,layoutY,symbolWidth,symbolWidth);
-
-        var layoutAngle2;
-        var layoutX2;
-        var layoutY2;
-        var separationAngle2;
-        var symbolWidth2;
-        var count2 = inputChildSet[i].numGroups+inputChildSet[i].numSignals;
-        if (count2 > 1) {
-            separationAngle2 = Math.PI/(count2-1);
-        } else {
-            separationAngle2 = Math.PI/(count2);
-        }
-        if (count2 <= 6) {
-            symbolWidth2 = symbolWidth/6;
-            //symbolWidth2 = (symbolWidth*Math.PI)/(2 * (count2-1+(Math.PI/2))) - 20;
-        } else {
-            //symbolWidth2 = (symbolWidth*Math.PI)/(2 * (count2-1+(Math.PI/2))) - 6;
-            symbolWidth2 = (symbolWidth*Math.PI)/(2*( (Math.PI/Math.sin(Math.PI/(count2-1))) + (Math.PI/2) ));
-        }
-        var layoutRadius2 = (symbolWidth/2)-(symbolWidth2/2);
-        globalP.fill(0);
-
-        for (var j=0;j<count2;j++) {
-            layoutAngle2 = j*separationAngle2 + (3*Math.PI/2);
-            layoutX2 = layoutX + (layoutRadius2*Math.cos(layoutAngle2));
-            layoutY2 = layoutY + (layoutRadius2*Math.sin(layoutAngle2));
-
-            globalP.ellipse(layoutX2,layoutY2,symbolWidth2,symbolWidth2);
-        }
-
-        nodeGlyphMap.inputs.add(inputSet[i], {layoutX:layoutX,layoutY:layoutY,symbolWidth:symbolWidth,mouseOver:false});
-    }
-    */
 
 }
 
-function drawEdges() {
+function updateEdgeGlyphMap(signalsOnly) {
 
-    connectionGlyphMap = [];
+    edgeGlyphMap = new Assoc();
 
     var outputSet = getCurrentOutputPaths();
     var inputSet = getCurrentInputPaths();
 
-    var outputChildren = getNumberOfChildNodesForOutputLevel();
-    var inputChildren = getNumberOfChildNodesForInputLevel();
+    var outputChildren = getSubnodesForOutputLevel();
+    var inputChildren = getSubnodesForInputLevel();
     var outputLevel = getCurrentOutputLevelSet();
     var inputLevel = getCurrentInputLevelSet();
 
@@ -1243,21 +1001,19 @@ function drawEdges() {
     var connectionInputMatches = [];
     var connectionKeys = connections.keys();
 
-    var keyPairs = new Assoc();
-
     for (var i=0;i<connectionKeys.length;i++) {
         for (var j=0;j<outputSet.length;j++) {
             var exp1 = new RegExp(outputSet[j]+">");
             var exp2 = new RegExp(outputSet[j]+".*>");
             if (connectionKeys[i].match(exp1)) {
                 connectionOutputMatches.push(connectionKeys[i]); 
-                keyPairs.add(connectionKeys[i], {output:outputLevel[j],isOutputSubnode:false});
-            } else if (connectionKeys[i].match(exp2)) {
+                edgeGlyphMap.add(connectionKeys[i], {output:outputLevel[j],outputChild:outputSet[j],isOutputSubnode:false});
+            } else if (connectionKeys[i].match(exp2) && !signalsOnly) {
                 connectionOutputMatches.push(connectionKeys[i]); 
                 for (var k=0;k<outputChildren[j].length;k++) {
                     var exp3 = new RegExp(outputChildren[j][k].name+".*>");
                     if (connectionKeys[i].match(exp3)) {
-                        keyPairs.add(connectionKeys[i], {output:outputLevel[j],outputChild:outputChildren[j][k].name,isOutputSubnode:true});
+                        edgeGlyphMap.add(connectionKeys[i], {output:outputLevel[j],outputChild:outputChildren[j][k].name,isOutputSubnode:true});
                     }
                 }
             }
@@ -1267,46 +1023,49 @@ function drawEdges() {
         for (var j=0;j<inputSet.length;j++) {
             var exp1 = new RegExp(">"+inputSet[j]+".+");
             var exp2 = new RegExp(">"+inputSet[j]+".*");
-            if (connectionOutputMatches[i].match(exp1)) {
+            if (connectionOutputMatches[i].match(exp1) && !signalsOnly) {
                 connectionInputMatches.push(connectionKeys[i]); 
                 for (var k=0;k<inputChildren[j].length;k++) {
                     var exp3 = new RegExp(">"+inputChildren[j][k].name+".*");
                     if (connectionOutputMatches[i].match(exp3)) {
-                        keyPairs.get(connectionOutputMatches[i]).input = inputLevel[j];
-                        keyPairs.get(connectionOutputMatches[i]).inputChild = inputChildren[j][k].name;
-                        keyPairs.get(connectionOutputMatches[i]).isInputSubnode = true;
+                        edgeGlyphMap.get(connectionOutputMatches[i]).input = inputLevel[j];
+                        edgeGlyphMap.get(connectionOutputMatches[i]).inputChild = inputChildren[j][k].name;
+                        edgeGlyphMap.get(connectionOutputMatches[i]).isInputSubnode = true;
                     }
                 }
             } else if (connectionOutputMatches[i].match(exp2)) {
                 connectionInputMatches.push(connectionOutputMatches[i]); 
-                keyPairs.get(connectionOutputMatches[i]).input = inputLevel[j];
-                keyPairs.get(connectionOutputMatches[i]).isInputSubnode = false;
+                edgeGlyphMap.get(connectionOutputMatches[i]).input = inputLevel[j];
+                edgeGlyphMap.get(connectionOutputMatches[i]).inputChild = inputSet[j];
+                edgeGlyphMap.get(connectionOutputMatches[i]).isInputSubnode = false;
             }
         }
     }
 
-    var keys = keyPairs.keys();
+    var keys = edgeGlyphMap.keys();
     var x1, y1, x2, y2;
     var cx1, cy1, cx2, cy2;
-    globalP.strokeWeight(3);
-    globalP.stroke(0);
-    globalP.noFill();
     for (var i=0;i<keys.length;i++) {
-        if (keyPairs.get(keys[i]).input != undefined) {
-            if (keyPairs.get(keys[i]).isOutputSubnode) {
-                x1 = nodeGlyphMap.outputs.get(keyPairs.get(keys[i]).output).subNodes.get(keyPairs.get(keys[i]).outputChild).layoutX;
-                y1 = nodeGlyphMap.outputs.get(keyPairs.get(keys[i]).output).subNodes.get(keyPairs.get(keys[i]).outputChild).layoutY;
+        if (edgeGlyphMap.get(keys[i]).input != undefined) {
+
+            if (edgeGlyphMap.get(keys[i]).isOutputSubnode) {
+                x1 = nodeGlyphMap.outputs.get(edgeGlyphMap.get(keys[i]).output).subNodes.get(edgeGlyphMap.get(keys[i]).outputChild).layoutX;
+                y1 = nodeGlyphMap.outputs.get(edgeGlyphMap.get(keys[i]).output).subNodes.get(edgeGlyphMap.get(keys[i]).outputChild).layoutY;
             } else {
-                x1 = nodeGlyphMap.outputs.get(keyPairs.get(keys[i]).output).layoutX;
-                y1 = nodeGlyphMap.outputs.get(keyPairs.get(keys[i]).output).layoutY;
+                x1 = nodeGlyphMap.outputs.get(edgeGlyphMap.get(keys[i]).output).layoutX;
+                y1 = nodeGlyphMap.outputs.get(edgeGlyphMap.get(keys[i]).output).layoutY;
             }
-            if (keyPairs.get(keys[i]).isInputSubnode) {
-                x2 = nodeGlyphMap.inputs.get(keyPairs.get(keys[i]).input).subNodes.get(keyPairs.get(keys[i]).inputChild).layoutX;
-                y2 = nodeGlyphMap.inputs.get(keyPairs.get(keys[i]).input).subNodes.get(keyPairs.get(keys[i]).inputChild).layoutY;
+            if (edgeGlyphMap.get(keys[i]).isInputSubnode) {
+                x2 = nodeGlyphMap.inputs.get(edgeGlyphMap.get(keys[i]).input).subNodes.get(edgeGlyphMap.get(keys[i]).inputChild).layoutX;
+                y2 = nodeGlyphMap.inputs.get(edgeGlyphMap.get(keys[i]).input).subNodes.get(edgeGlyphMap.get(keys[i]).inputChild).layoutY;
             } else {
-                x2 = nodeGlyphMap.inputs.get(keyPairs.get(keys[i]).input).layoutX;
-                y2 = nodeGlyphMap.inputs.get(keyPairs.get(keys[i]).input).layoutY;
+                x2 = nodeGlyphMap.inputs.get(edgeGlyphMap.get(keys[i]).input).layoutX;
+                y2 = nodeGlyphMap.inputs.get(edgeGlyphMap.get(keys[i]).input).layoutY;
             }
+            edgeGlyphMap.get(keys[i]).x1 = x1;
+            edgeGlyphMap.get(keys[i]).y1 = y1;
+            edgeGlyphMap.get(keys[i]).x2 = x2;
+            edgeGlyphMap.get(keys[i]).y2 = y2;
 
             if (y1 < centerY1) {
                 if (y2 < centerY2) {
@@ -1333,194 +1092,42 @@ function drawEdges() {
                     cy2 = y2-80;
                 }
             }
+            edgeGlyphMap.get(keys[i]).cx1 = cx1;
+            edgeGlyphMap.get(keys[i]).cy1 = cy1;
+            edgeGlyphMap.get(keys[i]).cx2 = cx2;
+            edgeGlyphMap.get(keys[i]).cy2 = cy2;
+            edgeGlyphMap.get(keys[i]).mouseOver = false;
+        }
+    }
+
+}
+
+function drawEdges() {
+
+    var keys = edgeGlyphMap.keys();
+    var x1, y1, x2, y2;
+    var cx1, cy1, cx2, cy2;
+    globalP.strokeWeight(3);
+    globalP.noFill();
+    for (var i=0;i<keys.length;i++) {
+        if (edgeGlyphMap.get(keys[i]).input != undefined) {
+            x1 = edgeGlyphMap.get(keys[i]).x1;
+            y1 = edgeGlyphMap.get(keys[i]).y1;
+            x2 = edgeGlyphMap.get(keys[i]).x2;
+            y2 = edgeGlyphMap.get(keys[i]).y2;
+            cx1 = edgeGlyphMap.get(keys[i]).cx1;
+            cy1 = edgeGlyphMap.get(keys[i]).cy1;
+            cx2 = edgeGlyphMap.get(keys[i]).cx2;
+            cy2 = edgeGlyphMap.get(keys[i]).cy2;
+            if (edgeGlyphMap.get(keys[i]).mouseOver) {
+                globalP.stroke(255,0,0);
+            } else {
+                globalP.stroke(0);
+            }
             globalP.bezier(x1,y1,cx1,cy1,cx2,cy2,x2,y2);
         }
     }
 
-/*
-    var keys = keyPairs.keys();
-    globalP.stroke(0); 
-    globalP.strokeWeight(4); 
-    for (var i=0;i<keys.length;i++) {
-        if (keyPairs.get(keys[i]).input != undefined) {
-            globalP.line(nodeGlyphMap.outputs.get(keyPairs.get(keys[i]).output).layoutX,
-                    nodeGlyphMap.outputs.get(keyPairs.get(keys[i]).output).layoutY,
-                    nodeGlyphMap.inputs.get(keyPairs.get(keys[i]).input).layoutX,
-                    nodeGlyphMap.inputs.get(keyPairs.get(keys[i]).input).layoutY);
-        }
-    }
-    */
-
-    return [connectionOutputMatches, connectionInputMatches, keyPairs];
-
-}
-
-function drawList() {
-    var horizontalOffset = 20;
-    var lineSpacing = 26;
-    var bigColumnSpacing = 360;
-    var littleColumnSpacing = 70;
-    var leftBound = 20;
-    var topBound = 150;
-    var textSize = 16;
-
-    globalP.noStroke();
-
-    if ($('#signalsTab').hasClass('active')) {
-        globalP.fill(0);
-        globalP.textSize(textSize);
-        globalP.textAlign(globalP.LEFT);
-        globalP.text("signal name",leftBound,126);
-        globalP.text("type",leftBound+bigColumnSpacing,126);
-        globalP.text("units",leftBound+bigColumnSpacing+littleColumnSpacing,126);
-        globalP.text("min",leftBound+bigColumnSpacing+(2*littleColumnSpacing),126);
-        globalP.text("max",leftBound+bigColumnSpacing+(3*littleColumnSpacing),126);
-        globalP.text("tags",leftBound+bigColumnSpacing+(4*littleColumnSpacing),126);
-
-        globalP.fill(255,0,0,255);
-        globalP.textSize(18);
-
-        if (tables[0].length > numberOfItemsPerPage) {
-            globalP.textSize(textSize);
-            globalP.fill(200);
-            if (signalPagePointer != 0) {
-                globalP.triangle(0+horizontalOffset,100,
-                        300+horizontalOffset,100,
-                        150+horizontalOffset,70);
-            }
-            if (signalPagePointer+numberOfItemsPerPage < tables[0].length) {
-                globalP.triangle(0+horizontalOffset,750,
-                        300+horizontalOffset,750,
-                        150+horizontalOffset,780);
-
-                globalP.fill(10);
-                globalP.text(
-                        "showing "+(signalPagePointer+1)+"-"+(signalPagePointer+numberOfItemsPerPage)+" of "+tables[0].length+" signals",
-                        450, 85);
-            } else {
-                globalP.fill(10);
-                globalP.text(
-                        "showing "+(signalPagePointer+1)+"-"+tables[0].length+" of "+tables[0].length+" signals",
-                        450, 85);
-            }
-        } else {
-            globalP.textSize(textSize);
-            globalP.fill(10);
-            globalP.text(
-                    "showing "+1+"-"+tables[0].length+" of "+tables[0].length+" signals",
-                    450, 85);
-
-        }
-
-        var xPos = leftBound;
-        var yPos = topBound;
-
-        numberOfItemsPerPage = Math.ceil((screenHeight-80-topBound)/lineSpacing) + 1;
-
-        globalP.fill(200);
-        if (tables != null) {
-            for (var i=signalPagePointer;i<tables[0].length;i++) {
-                globalP.text(tables[0][i][0],
-                        xPos,
-                        yPos);
-                globalP.text(tables[0][i][1],
-                        xPos+bigColumnSpacing,
-                        yPos);
-                globalP.text(tables[0][i][2],
-                        xPos+bigColumnSpacing+littleColumnSpacing,
-                        yPos);
-                globalP.text(tables[0][i][3],
-                        xPos+bigColumnSpacing+(2*littleColumnSpacing),
-                        yPos);
-                globalP.text(tables[0][i][4],
-                        xPos+bigColumnSpacing+(3*littleColumnSpacing),
-                        yPos);
-                globalP.text(tables[0][i][5].toString(),
-                        xPos+bigColumnSpacing+(4*littleColumnSpacing),
-                        yPos);
-                if (yPos+80 > screenHeight) {
-                    break;
-                } else {
-                    yPos += lineSpacing;
-                }
-            }
-        }
-    } else {
-        globalP.fill(0);
-        globalP.textSize(textSize);
-        globalP.textAlign(globalP.LEFT);
-        globalP.text("expression",leftBound,126);
-        globalP.text("output",leftBound+bigColumnSpacing,126);
-        globalP.text("input",leftBound+bigColumnSpacing+bigColumnSpacing,126);
-        globalP.fill(0);
-        //globalP.text("range",leftBound+bigColumnSpacing+(2*bigColumnSpacing),126);
-        //globalP.text("max",leftBound+bigColumnSpacing+(3*littleColumnSpacing),126);
-
-        if (tables[1].length > numberOfItemsPerPage) {
-            globalP.textSize(textSize);
-            globalP.fill(200);
-            if (mappingPagePointer != 0) {
-                globalP.triangle(0+horizontalOffset,100,
-                        300+horizontalOffset,100,
-                        150+horizontalOffset,70);
-            }
-            if (mappingPagePointer+numberOfItemsPerPage < tables[1].length) {
-                globalP.triangle(0+horizontalOffset,750,
-                        300+horizontalOffset,750,
-                        150+horizontalOffset,780);
-
-                globalP.fill(10);
-                globalP.text(
-                        "showing "+(mappingPagePointer+1)+"-"+(mappingPagePointer+numberOfItemsPerPage)+" of "+tables[1].length+" mappings",
-                        450, 85);
-            } else {
-                globalP.fill(10);
-                globalP.text(
-                        "showing "+(mappingPagePointer+1)+"-"+tables[1].length+" of "+tables[1].length+" mappings",
-                        450, 85);
-            }
-        } else {
-            globalP.textSize(textSize);
-            globalP.fill(10);
-            globalP.text(
-                    "showing "+1+"-"+tables[1].length+" of "+tables[1].length+" mappings",
-                    450, 85);
-
-        }
-
-        xPos = leftBound;
-        yPos = topBound;
-
-        globalP.fill(180);
-        if (tables != null) {
-            for (var i=mappingPagePointer;i<tables[1].length;i++) {
-                globalP.text(tables[1][i].expression,
-                        xPos,
-                        yPos);
-                globalP.text(tables[1][i].output[2],
-                        xPos+bigColumnSpacing,
-                        yPos);
-                globalP.text(tables[1][i].input[2],
-                        xPos+bigColumnSpacing+bigColumnSpacing,
-                        yPos);
-                //globalP.text("["+tables[1][i].range[0]+","+tables[1][i].range[1]+"]"+"-"+"["+tables[1][i].range[2]+","+tables[1][i].range[3]+"]",
-                //		xPos+(3*bigColumnSpacing),
-                //		yPos);
-                if (yPos+80 > screenHeight) {
-                    break;
-                } else {
-                    yPos += lineSpacing;
-                }
-            }
-        }
-        globalP.fill(255,0,0);
-        globalP.text(selectedOutput,
-                xPos+bigColumnSpacing,
-                yPos);
-        globalP.text(selectedInput,
-                xPos+bigColumnSpacing+bigColumnSpacing,
-                yPos);
-    }
 }
 
 function drawRaw() {
@@ -1549,6 +1156,9 @@ function activateMappingsMode() {
 }
 
 function activateGraphMode() {
+    $('#addMappingForm').toggle(false);
+    $('#rawTab').toggle(false);
+
 	$('#globalCanvas').toggle(true);
     $('#signalsFile').toggle(false);
     $('#mappingsFile').toggle(false);
@@ -1568,8 +1178,13 @@ function activateGraphMode() {
 	//$('#executeButton').toggle(false);
 	$('#signalsTab').toggle(false);
 	$('#mappingsTab').toggle(false);
+
+    updateGraph = true;
 }
 function activateListMode() {
+    $('#addMappingForm').toggle(true);
+    $('#rawTab').toggle(false);
+
 	$('#globalCanvas').toggle(true);
     $('#signalsFile').toggle(false);
     $('#mappingsFile').toggle(false);
@@ -1587,8 +1202,10 @@ function activateListMode() {
 	//$('#executeInput').toggle(true);
 	//$('#executeText').toggle(true);
 	//$('#executeButton').toggle(true);
-	$('#signalsTab').toggle(true);
-	$('#mappingsTab').toggle(true);
+	//$('#signalsTab').toggle(true);
+	//$('#mappingsTab').toggle(true);
+
+    updateGraph = true;
 }
 function activateRawMode() {
 	$('#globalCanvas').toggle(false);
@@ -1745,55 +1362,21 @@ $(document).ready(function() {
 
 		$('#graphTab').click(function() {
 			activateGraphMode();
+            updateGraph = true;
 		});
 		$('#listTab').click(function() {
 			activateListMode();
-		});
-		$('#rawTab').click(function() {
-			activateRawMode();
-		});
-		$('#signalsTab').click(function() {
-			activateSignalsMode();
-		});
-		$('#mappingsTab').click(function() {
-			activateMappingsMode();
-		});
-		$('#executeButton').click(function() {
-			executeSymbols();
+            updateGraph = true;
 		});
 
-/*
-		$('#filterInput').keydown(function(event) {
-			if (event.which == '9') {
-				event.preventDefault();
-				activateListMode();
-			}
-		});
-		*/
 		$('#filterInput').keyup(function(event) {
 			event.preventDefault();
 			updateActiveFilter();
-            //updateLevelStructure();
+            updateGraph = true;
 		});
-		/*
-		$('#executeInput').keydown(function(event) {
-			if (event.which == '9') {
-				event.preventDefault();
-				activateGraphMode();
-			}
-		});
-		$('#executeInput').keyup(function(event) {
-			event.preventDefault();
-			if (event.which == '13') {
-				executeSymbols();
-			} else {
-				updateActiveExecution();
-			}
-		});
-		*/
 
-        //updateActiveFilter();
 		main();
+        activateListMode();
 });
 
 devices = new Assoc();
@@ -1805,62 +1388,67 @@ connections = new Assoc();
 function main()
 {
     command.register("all_devices", function(cmd, args) {
-        for (d in args)
+        for (d in args) {
+            updateGraph = true;
             devices.add(args[d].name, args[d]);
+        }
     });
     command.register("new_device", function(cmd, args) {
+        updateGraph = true;
         devices.add(args.name, args);
     });
     command.register("del_device", function(cmd, args) {
+        updateGraph = true;
         devices.remove(args.name);
     });
 
     command.register("all_signals", function(cmd, args) {
-        for (d in args)
+        for (d in args) {
+            updateGraph = true;
             signals.add(args[d].device_name+args[d].name, args[d]);
+        }
     });
     command.register("new_signal", function(cmd, args) {
-        signals.add(args.device_name+args.name, args);
+            updateGraph = true;
+            signals.add(args.device_name+args.name, args);
     });
     command.register("del_signal", function(cmd, args) {
-        signals.remove(args.device_name+args.name);
+            updateGraph = true;
+            signals.remove(args.device_name+args.name);
     });
 
     command.register("all_links", function(cmd, args) {
-        for (l in args)
-            links.add(args[l].src_name+'>'+args[l].dest_name,
-                      args[l]);
+            for (l in args) {
+            updateGraph = true;
+            links.add(args[l].src_name+'>'+args[l].dest_name, args[l]);
+            }
     });
     command.register("new_link", function(cmd, args) {
-        links.add(args.src_name+'>'+args.dest_name, args);
+            updateGraph = true;
+            links.add(args.src_name+'>'+args.dest_name, args);
     });
     command.register("del_link", function(cmd, args) {
-        links.remove(args.src_name+'>'+args.dest_name);
+            updateGraph = true;
+            links.remove(args.src_name+'>'+args.dest_name);
     });
 
     command.register("all_connections", function(cmd, args) {
-        for (d in args)
-            connections.add(args[d].src_name+'>'+args[d].dest_name,
-                            args[d]);
-        //update_display();
-        /*
-        for (d in args)
-            update_connection_properties_for(args[d],
-                                             get_selected(connections));
-            */
+            for (d in args) {
+            updateGraph = true;
+            connections.add(args[d].src_name+'>'+args[d].dest_name, args[d]);
+            }
     });
     command.register("new_connection", function(cmd, args) {
+        updateGraph = true;
         connections.add(args.src_name+'>'+args.dest_name, args);
-        //update_connection_properties_for(args, get_selected(connections));
     });
     command.register("mod_connection", function(cmd, args) {
+        updateGraph = true;
         connections.add(args.src_name+'>'+args.dest_name, args);
-        //update_connection_properties_for(args, get_selected(connections));
     });
     command.register("del_connection", function(cmd, args) {
-        //var conns = get_selected(connections);
+        updateGraph = true;
         connections.remove(args.src_name+'>'+args.dest_name);
-        //update_connection_properties_for(args, conns);
     });
 
 	command.start();
@@ -1905,37 +1493,6 @@ function updateActiveFilter() {
 	activeFilter = activeFilter+'';
 	activeFilter = activeFilter.replace(/^\s*(.*?)\s*$/,"$1").toLowerCase();
 	highlightedFilter = activeFilter;
-
-
-
-	/*
-		debug matching
-	 */
-     /*
-	if (activeFilter.match(new RegExp("!\\w+(!\\w+|)*","ig")) == null) {
-		debugQuery = [""];
-	} else {
-		debugQuery = activeFilter.match(new RegExp("!\\w+(!\\w+|)*","ig"));
-
-		for (var i=0;i<debugQuery.length;i++) {
-			highlightedFilter = highlightedFilter.replace(
-					debugQuery[i],
-					"<span class=\"red\">"+debugQuery[i]+"</span>");
-
-			debugQuery[i] = debugQuery[i].match(new RegExp("\\w+","ig"));
-		}
-	}
-	debugMode = 0;
-	for (var i=0;i<debugQuery.length;i++) {
-		if (debugQuery[i] == "debug") {
-			debugMode = 1;	
-		} else if (debugQuery[i] == "nodebug") {
-			debugMode = 0;
-		}
-	}
-    */
-
-
 
 	/*
 		tag and namespace matching

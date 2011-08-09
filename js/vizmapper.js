@@ -54,6 +54,187 @@
 //	src_name
 //	dest_name
 
+var globalP;
+var isAbouting = false;
+var isHelping = false;
+$(document).ready(function() {
+		globalP = new Processing($('#globalCanvas')[0],globalP);
+
+		$('span').hover(function() {
+			$(this).toggleClass('normalHelp',false);
+			$(this).toggleClass('hoverHelp',true);
+		}, function() {
+			$(this).toggleClass('normalHelp',true);
+			$(this).toggleClass('hoverHelp',false);
+		});
+        $('#viewHelpTrigger').click(function() {
+            deactivateHelpMode();
+            $('#viewHelp').toggle(true);
+        });
+        $('#signalHelpTrigger').click(function() {
+            deactivateHelpMode();
+            $('#signalHelp').toggle(true);
+        });
+        $('#mappingHelpTrigger').click(function() {
+            deactivateHelpMode();
+            $('#mappingHelp').toggle(true);
+        });
+        $('#filteringHelpTrigger').click(function() {
+            deactivateHelpMode();
+            $('#filteringHelp').toggle(true);
+        });
+
+        $('#viewHelp').click(function() {
+            $('#viewHelp').toggle(false);
+        });
+        $('#signalHelp').click(function() {
+            $('#signalHelp').toggle(false);
+        });
+        $('#mappingHelp').click(function() {
+            $('#mappingHelp').toggle(false);
+        });
+        $('#filteringHelp').click(function() {
+            $('#filteringHelp').toggle(false);
+        });
+
+		$('#aboutSwitch').click(function() {
+			isAbouting = !isAbouting;
+			if (isAbouting) {
+				activateAboutMode();
+			} else {
+				deactivateAboutMode();
+			}
+		});
+		$('#helpSwitch').click(function() {
+			isHelping = !isHelping;
+			if (isHelping) {
+				activateHelpMode();
+			} else {
+				deactivateHelpMode();
+			}
+		});
+
+        $('#updateConnection').click(function() {
+                if (selectedSource != "none" &&
+                    selectedDestination != "none") {
+                    if (selectedEdge == null) {
+                        doConnect();
+                    } else {
+                        doModifyConnection();
+                    }
+                }
+        });
+        $('#removeConnection').click(function() {
+                if (selectedSource != "none" &&
+                    selectedDestination != "none") {
+                    doDisconnect();
+                }
+        });
+
+		$('#viewTab').click(function() {
+			activateViewMode();
+            updateGraph = true;
+		});
+		$('#editTab').click(function() {
+			activateEditMode();
+            updateGraph = true;
+		});
+
+		$('#filterInput').keyup(function(event) {
+			event.preventDefault();
+			updateActiveFilter();
+            updateGraph = true;
+		});
+
+		main();
+        activateViewMode();
+});
+
+// register callbacks for webmapper events
+function main()
+{
+    command.register("all_devices", function(cmd, args) {
+        for (d in args) {
+            updateGraph = true;
+            devices.add(args[d].name, args[d]);
+        }
+    });
+    command.register("new_device", function(cmd, args) {
+        updateGraph = true;
+        devices.add(args.name, args);
+        resetToRootLevel();
+    });
+    command.register("del_device", function(cmd, args) {
+        updateGraph = true;
+        devices.remove(args.name);
+        resetToRootLevel();
+    });
+
+    command.register("all_signals", function(cmd, args) {
+        for (d in args) {
+            updateGraph = true;
+            signals.add(args[d].device_name+args[d].name, args[d]);
+        }
+    });
+    command.register("new_signal", function(cmd, args) {
+            updateGraph = true;
+            signals.add(args.device_name+args.name, args);
+            resetToRootLevel();
+    });
+    command.register("del_signal", function(cmd, args) {
+            updateGraph = true;
+            signals.remove(args.device_name+args.name);
+            resetToRootLevel();
+    });
+
+    command.register("all_links", function(cmd, args) {
+            for (l in args) {
+            updateGraph = true;
+            links.add(args[l].src_name+'>'+args[l].dest_name, args[l]);
+            }
+    });
+    command.register("new_link", function(cmd, args) {
+            updateGraph = true;
+            links.add(args.src_name+'>'+args.dest_name, args);
+    });
+    command.register("del_link", function(cmd, args) {
+            updateGraph = true;
+            links.remove(args.src_name+'>'+args.dest_name);
+    });
+
+    command.register("all_connections", function(cmd, args) {
+            for (d in args) {
+            updateGraph = true;
+            connections.add(args[d].src_name+'>'+args[d].dest_name, args[d]);
+            }
+    });
+    command.register("new_connection", function(cmd, args) {
+        updateGraph = true;
+        connections.add(args.src_name+'>'+args.dest_name, args);
+    });
+    command.register("mod_connection", function(cmd, args) {
+        updateGraph = true;
+        connections.add(args.src_name+'>'+args.dest_name, args);
+    });
+    command.register("del_connection", function(cmd, args) {
+        updateGraph = true;
+        connections.remove(args.src_name+'>'+args.dest_name);
+    });
+
+	command.start();
+
+    // Delay starting polling, because it results in a spinning wait
+    // cursor in the browser.
+    setTimeout(
+        function(){
+            command.send('all_devices');
+            command.send('all_signals');
+            command.send('all_links');
+            command.send('all_connections');
+			},
+        100);
+}
+
 var edgeGlyphMap = [];
 var nodeGlyphMap = {outputs:new Assoc(),inputs:new Assoc()};
 
@@ -100,10 +281,10 @@ function globalP(p) {
 	};
 
 	p.mouseClicked = function() {
-		if ($('#graphTab').hasClass('active')) {
+		if ($('#viewTab').hasClass('active')) {
             detectNodeClick(false);
             detectTraversalClick();
-		} else if ($('#listTab').hasClass('active')) {
+		} else if ($('#editTab').hasClass('active')) {
             detectNodeClick(true);
             detectEdgeClick();
         }
@@ -125,7 +306,7 @@ function globalP(p) {
             updateSignalMatches();
             updateLevelStructure();
 
-            if ($('#graphTab').hasClass('active')) {
+            if ($('#viewTab').hasClass('active')) {
                 updateNodeGlyphMap(false);
                 updateEdgeGlyphMap(false);
             } else {
@@ -140,12 +321,10 @@ function globalP(p) {
             }
         }
 
-        if ($('#graphTab').hasClass('active')) {
-            $('html').toggleClass('graphColor',true);
-            $('html').toggleClass('listColor',false);
+        if ($('#viewTab').hasClass('active')) {
+            $('html').toggleClass('viewColor',true);
+            $('html').toggleClass('editColor',false);
             $('html').toggleClass('rawColor',false);
-            $('#signalsFile').toggle(false);
-            $('#mappingsFile').toggle(false);
 
             p.background(207);
             drawBackground();
@@ -155,9 +334,9 @@ function globalP(p) {
             drawListGlyphs();
             drawTraversalGlyphs();
 
-        } else if ($('#listTab').hasClass('active')) {
-            $('html').toggleClass('graphColor',false);
-            $('html').toggleClass('listColor',true);
+        } else {
+            $('html').toggleClass('viewColor',false);
+            $('html').toggleClass('editColor',true);
             $('html').toggleClass('rawColor',false);
 
             p.background(207,207,207);
@@ -167,12 +346,6 @@ function globalP(p) {
             drawNodes();
             drawEdges();
 
-        } else {
-            $('html').toggleClass('graphColor',false);
-            $('html').toggleClass('listColor',false);
-            $('html').toggleClass('rawColor',true);
-            p.background(220);
-            drawRaw();
         }
 
         drawCounter++;
@@ -185,7 +358,7 @@ function updateNodeMouseState() {
     mousedDestination = "";
 
     // hover detection of source nodes and destination nodes 
-    if ($('#graphTab').hasClass('active') || $('#listTab').hasClass('active')) {
+    if ($('#viewTab').hasClass('active') || $('#editTab').hasClass('active')) {
         var thisX = 0; // input,level,container,drawingNumbers,thisX
         var thisY = 0;
         var thisRadius = 0;
@@ -703,7 +876,7 @@ function climbInputTree(level) {
 function drawBackground() {
     var backgroundWidth = 700;
 
-    if ($('#graphTab').hasClass('active')) {
+    if ($('#viewTab').hasClass('active')) {
         centerX1 = 550;
         centerY1 = 45+(760/2);
         centerX2 = screenWidth-550;
@@ -716,7 +889,7 @@ function drawBackground() {
         globalP.noStroke();
         globalP.fill(187,187,187);
         globalP.rect(screenWidth-190,150,180,screenHeight+150);
-    } else if ($('#listTab').hasClass('active')) {
+    } else if ($('#editTab').hasClass('active')) {
         centerX1 = 550+190;
         centerY1 = 45+(760/2);
         centerX2 = screenWidth-550+190;
@@ -1149,101 +1322,29 @@ function drawEdges() {
 
 }
 
-function drawRaw() {
-    if ($('#signalsTab').hasClass('active')) {
-        $('#rawText').text(JSON.stringify(liveJSONBase,null,'\t'));
-        $('#signalsFile').toggle(true);
-        $('#mappingsFile').toggle(false);
-    } else {
-        $('#rawText').text(JSON.stringify(liveJSONBase,null,'\t'));
-        $('#signalsFile').toggle(false);
-        $('#mappingsFile').toggle(true);
-    }
-}
-
-function activateSignalsMode() {
-	$('#signalsTab').toggleClass('active',true);
-	$('#signalsTab').toggleClass('inactive',false);
-	$('#mappingsTab').toggleClass('active',false);
-	$('#mappingsTab').toggleClass('inactive',true);
-}
-function activateMappingsMode() {
-	$('#signalsTab').toggleClass('active',false);
-	$('#signalsTab').toggleClass('inactive',true);
-	$('#mappingsTab').toggleClass('active',true);
-	$('#mappingsTab').toggleClass('inactive',false);
-}
-
-function activateGraphMode() {
+function activateViewMode() {
     $('#addMappingForm').toggle(false);
-    $('#rawTab').toggle(false);
 
 	$('#globalCanvas').toggle(true);
-    $('#signalsFile').toggle(false);
-    $('#mappingsFile').toggle(false);
-	$('#rawText').toggle(false);
 
-	$('#graphTab').toggleClass('active',true);
-	$('#graphTab').toggleClass('inactive',false);
-	$('#listTab').toggleClass('active',false);
-	$('#listTab').toggleClass('inactive',true);
-	$('#rawTab').toggleClass('active',false);
-	$('#rawTab').toggleClass('inactive',true);
-
-	//$('#filterInput').toggle(true);
-	//$('#filterText').toggle(true);
-	//$('#executeInput').toggle(false);
-	//$('#executeText').toggle(false);
-	//$('#executeButton').toggle(false);
-	$('#signalsTab').toggle(false);
-	$('#mappingsTab').toggle(false);
+	$('#viewTab').toggleClass('active',true);
+	$('#viewTab').toggleClass('inactive',false);
+	$('#editTab').toggleClass('active',false);
+	$('#editTab').toggleClass('inactive',true);
 
     updateGraph = true;
 }
-function activateListMode() {
+function activateEditMode() {
     $('#addMappingForm').toggle(true);
-    $('#rawTab').toggle(false);
 
 	$('#globalCanvas').toggle(true);
-    $('#signalsFile').toggle(false);
-    $('#mappingsFile').toggle(false);
-	$('#rawText').toggle(false);
 
-	$('#graphTab').toggleClass('active',false);
-	$('#graphTab').toggleClass('inactive',true);
-	$('#listTab').toggleClass('active',true);
-	$('#listTab').toggleClass('inactive',false);
-	$('#rawTab').toggleClass('active',false);
-	$('#rawTab').toggleClass('inactive',true);
-
-	//$('#filterInput').toggle(false);
-	//$('#filterText').toggle(false);
-	//$('#executeInput').toggle(true);
-	//$('#executeText').toggle(true);
-	//$('#executeButton').toggle(true);
-	//$('#signalsTab').toggle(true);
-	//$('#mappingsTab').toggle(true);
+	$('#viewTab').toggleClass('active',false);
+	$('#viewTab').toggleClass('inactive',true);
+	$('#editTab').toggleClass('active',true);
+	$('#editTab').toggleClass('inactive',false);
 
     updateGraph = true;
-}
-function activateRawMode() {
-	$('#globalCanvas').toggle(false);
-	$('#rawText').toggle(true);
-
-	$('#graphTab').toggleClass('active',false);
-	$('#graphTab').toggleClass('inactive',true);
-	$('#listTab').toggleClass('active',false);
-	$('#listTab').toggleClass('inactive',true);
-	$('#rawTab').toggleClass('active',true);
-	$('#rawTab').toggleClass('inactive',false);
-
-	//$('#filterInput').toggle(false);
-	//$('#filterText').toggle(false);
-	//$('#executeInput').toggle(true);
-	//$('#executeText').toggle(true);
-	//$('#executeButton').toggle(true);
-	$('#signalsTab').toggle(true);
-	$('#mappingsTab').toggle(true);
 }
 
 function activateAboutMode() {
@@ -1278,124 +1379,6 @@ function deactivateHelpMode() {
 
 	$('#aboutSwitch').toggle(true);
 }
-
-
-var globalP;
-var isAbouting = false;
-var isHelping = false;
-$(document).ready(function() {
-		globalP = new Processing($('#globalCanvas')[0],globalP);
-
-/*
-		$.getJSON('/data/testerNetwork.json', function(data) {
-			indexNetworkData(data);
-			updateActiveFilter();
-            updateLevelStructure();
-			//activateListMode();
-		});
-		$.getJSON('/data/testerMapping.json', function(data) {
-			indexMappingData(data);
-			updateActiveFilter();
-            updateLevelStructure();
-		});
-        */
-
-		$('span').hover(function(){
-			$(this).toggleClass('normalHelp',false);
-			$(this).toggleClass('hoverHelp',true);
-		}, function() {
-			$(this).toggleClass('normalHelp',true);
-			$(this).toggleClass('hoverHelp',false);
-		});
-        $('#viewHelpTrigger').click(function() {
-            deactivateHelpMode();
-            $('#viewHelp').toggle(true);
-        });
-        $('#signalHelpTrigger').click(function() {
-            deactivateHelpMode();
-            $('#signalHelp').toggle(true);
-        });
-        $('#mappingHelpTrigger').click(function() {
-            deactivateHelpMode();
-            $('#mappingHelp').toggle(true);
-        });
-        $('#filteringHelpTrigger').click(function() {
-            deactivateHelpMode();
-            $('#filteringHelp').toggle(true);
-        });
-        $('#taggingHelpTrigger').click(function() {
-            deactivateHelpMode();
-            $('#taggingHelp').toggle(true);
-        });
-
-        $('#viewHelp').click(function() {
-            $('#viewHelp').toggle(false);
-        });
-        $('#signalHelp').click(function() {
-            $('#signalHelp').toggle(false);
-        });
-        $('#mappingHelp').click(function() {
-            $('#mappingHelp').toggle(false);
-        });
-        $('#filteringHelp').click(function() {
-            $('#filteringHelp').toggle(false);
-        });
-        $('#taggingHelp').click(function() {
-            $('#taggingHelp').toggle(false);
-        });
-
-		$('#aboutSwitch').click(function() {
-			isAbouting = !isAbouting;
-			if (isAbouting) {
-				activateAboutMode();
-			} else {
-				deactivateAboutMode();
-			}
-		});
-		$('#helpSwitch').click(function() {
-			isHelping = !isHelping;
-			if (isHelping) {
-				activateHelpMode();
-			} else {
-				deactivateHelpMode();
-			}
-		});
-
-        $('#updateConnection').click(function() {
-                if (selectedSource != "none" &&
-                    selectedDestination != "none") {
-                    if (selectedEdge == null) {
-                        doConnect();
-                    } else {
-                        doModifyConnection();
-                    }
-                }
-        });
-        $('#removeConnection').click(function() {
-                if (selectedSource != "none" &&
-                    selectedDestination != "none") {
-                    doDisconnect();
-                }
-        });
-
-		$('#graphTab').click(function() {
-			activateGraphMode();
-            updateGraph = true;
-		});
-		$('#listTab').click(function() {
-			activateListMode();
-            updateGraph = true;
-		});
-
-		$('#filterInput').keyup(function(event) {
-			event.preventDefault();
-			updateActiveFilter();
-            updateGraph = true;
-		});
-
-		main();
-        activateGraphMode();
-});
 
 function doConnect() {
     var sourceDevice = selectedSource.split("/");
@@ -1436,110 +1419,9 @@ connectionModeCommands = {"Byp": 'bypass',
                           "Calib": 'calibrate',
                           "Expr": 'expression'};
 
-/* The main program. */
-function main()
-{
-    command.register("all_devices", function(cmd, args) {
-        for (d in args) {
-            updateGraph = true;
-            devices.add(args[d].name, args[d]);
-        }
-    });
-    command.register("new_device", function(cmd, args) {
-        updateGraph = true;
-        devices.add(args.name, args);
-        resetToRootLevel();
-    });
-    command.register("del_device", function(cmd, args) {
-        updateGraph = true;
-        devices.remove(args.name);
-        resetToRootLevel();
-    });
-
-    command.register("all_signals", function(cmd, args) {
-        for (d in args) {
-            updateGraph = true;
-            signals.add(args[d].device_name+args[d].name, args[d]);
-        }
-    });
-    command.register("new_signal", function(cmd, args) {
-            updateGraph = true;
-            signals.add(args.device_name+args.name, args);
-            resetToRootLevel();
-    });
-    command.register("del_signal", function(cmd, args) {
-            updateGraph = true;
-            signals.remove(args.device_name+args.name);
-            resetToRootLevel();
-    });
-
-    command.register("all_links", function(cmd, args) {
-            for (l in args) {
-            updateGraph = true;
-            links.add(args[l].src_name+'>'+args[l].dest_name, args[l]);
-            }
-    });
-    command.register("new_link", function(cmd, args) {
-            updateGraph = true;
-            links.add(args.src_name+'>'+args.dest_name, args);
-    });
-    command.register("del_link", function(cmd, args) {
-            updateGraph = true;
-            links.remove(args.src_name+'>'+args.dest_name);
-    });
-
-    command.register("all_connections", function(cmd, args) {
-            for (d in args) {
-            updateGraph = true;
-            connections.add(args[d].src_name+'>'+args[d].dest_name, args[d]);
-            }
-    });
-    command.register("new_connection", function(cmd, args) {
-        updateGraph = true;
-        connections.add(args.src_name+'>'+args.dest_name, args);
-    });
-    command.register("mod_connection", function(cmd, args) {
-        updateGraph = true;
-        connections.add(args.src_name+'>'+args.dest_name, args);
-    });
-    command.register("del_connection", function(cmd, args) {
-        updateGraph = true;
-        connections.remove(args.src_name+'>'+args.dest_name);
-    });
-
-	command.start();
-
-    // Delay starting polling, because it results in a spinning wait
-    // cursor in the browser.
-    setTimeout(
-        function(){
-            command.send('all_devices');
-            command.send('all_signals');
-            command.send('all_links');
-            command.send('all_connections');
-			},
-        100);
-}
-
-
-
-var debugMode = 0;
-
 var activeFilter = "";
-var highlightedFilter = "";
-
-var tables = [[],[]]; // signals,mappings
-var tagOperation = [[],[]]; //add,remove
-var mappingOperation = [];
-
-var namespaceQuery = [];
+var latestQuery = [];
 var filterMatches = [[],[],[]]; // outputs,inputs,mappings
-var vizQuery = [];
-var vizMatches = [];
-var mappingQuery = [];
-
-var compoundQuery = [];
-var compoundOperation = [];
 
 function updateActiveFilter() {
 	signalPagePointer = 0;
@@ -1548,68 +1430,40 @@ function updateActiveFilter() {
 	activeFilter = $('#filterInput').val();
 	activeFilter = activeFilter+'';
 	activeFilter = activeFilter.replace(/^\s*(.*?)\s*$/,"$1").toLowerCase();
-	highlightedFilter = activeFilter;
 
 	/*
-		tag and namespace matching
+	    namespace matching
 	*/
-	var matchingExp = new RegExp("(#|/|\\w|\\.)+","ig");
-	compoundQuery[0] = activeFilter.match(matchingExp);
-	if (compoundQuery[0] != null) {
-		compoundQuery[1] = [];
-		compoundQuery[2] = [];
-		for (var i=0;i<compoundQuery[0].length;i++) {
-			matchingExp = new RegExp("#\\w+","ig");
-			compoundQuery[1].push(compoundQuery[0][i].match(matchingExp));	
-			matchingExp = new RegExp("/\\w+\\.?\\w+","ig");
-			compoundQuery[2].push(compoundQuery[0][i].match(matchingExp));	
-		}
-		for (var i=0;i<compoundQuery[1].length;i++) {
-			if (compoundQuery[1][i] == null) {
-				compoundQuery[1][i] = ["#"];
-			}
-		}
-		for (varkkkki=0;i<compoundQuery[2].length;i++) {
-			if (compoundQuery[2][i] == null) {
-				compoundQuery[2][i] = ["/"];
-			}
-		}
+    latestQuery = activeFilter.match(/\S+/ig);
+	if (latestQuery != null) {
 	} else {
-		compoundQuery[0] = [""];
-		compoundQuery[1] = [["#"]];
-		compoundQuery[2] = [["/"]];
+        latestQuery = [""];
 	}
-
-	/*
-		command highlighting
-	 */
-	//$('#filterText').html(highlightedFilter);
 }
 
 function updateSignalMatches() {
 	filterMatches = [[],[],[]];
-	tables = [[],[]];
 
     var keys = signals.keys();
     for (var i=0;i<keys.length;i++) {
-		o: for (var j=0;j<compoundQuery[0].length;j++) {
+		o: for (var j=0;j<latestQuery.length;j++) {
                //namespace matching
-               if (keys[i].match(new RegExp(compoundQuery[0][j].slice(1),"ig")) == null) {
+               if (keys[i].match(new RegExp(latestQuery[j],"ig")) == null) {
                    continue o;
                }
 
                if (signals.get(keys[i]).direction  == 1) {	
                    filterMatches[0].push([signals.get(keys[i]).device_name,signals.get(keys[i]).name]);
+                   break;
                } else if (signals.get(keys[i]).direction == 0) {	
                    filterMatches[1].push([signals.get(keys[i]).device_name,signals.get(keys[i]).name]);
+                   break;
                }
         }
     }
 }
 
-var preLevels = [[],[]];
 var filterMatches = [[],[],[]];
-var preLevels = [[],[]];
 var levels = [[[]],[[]]];
 function updateLevelStructure() {
     levels = [[[]],[[]]];
@@ -1624,7 +1478,6 @@ function updateLevelStructure() {
             levels[0][levels[0].length-1].push(splitArray[j]);
 		}
 	}
-	preLevels[0] = levels[0];
     levels[0] = clusterSignals(levels[0], 0);
 
 
@@ -1638,7 +1491,6 @@ function updateLevelStructure() {
             levels[1][levels[1].length-1].push(splitArray[j]);
 		}
 	}
-    levels[1] = levels[1];
     levels[1] = clusterSignals(levels[1], 0);
 }
 
@@ -1668,44 +1520,4 @@ function clusterSignals(list,depth) {
     }
 
     return [labels,clusters];
-}
-
-var liveJSONBase;
-var masterLiveIndex = [];
-var masterNetworkIndex = [];
-var masterMappingIndex = [];
-function indexLiveData(data) {
-    if (data == null) {
-        return;
-    }
-
-	liveJSONBase = data;
-	masterLiveIndex = [];
-
-	for (var i=0;i<data.length;i++) {
-		if (data[i].direction == 0) {
-			masterLiveIndex.push([
-					data[i].name,
-					data[i].type,
-					"na",
-					data[i].min,
-					data[i].max,
-					[data[i].device_name.toLowerCase(),"input"]
-					]);
-		} else {
-			if (data[i].device_name == undefined) {
-				globalP.println(data[i].name);
-			}
-			masterLiveIndex.push([
-					data[i].name,
-					data[i].type,
-					"na",
-					data[i].min,
-					data[i].max,
-					[data[i].device_name.toLowerCase(),"output"]
-					]);
-		}
-	}
-
-	masterNetworkIndex = masterLiveIndex;
 }

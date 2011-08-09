@@ -91,3 +91,19 @@ function fullOffset(e)
             width:e.offsetWidth,
             height:e.offsetHeight};
 }
+
+// Return new array with duplicate values removed
+Array.prototype.uniquePairs =
+function() {
+    var a = [];
+    var l = this.length;
+    for(var i=0; i<l; i++) {
+        for(var j=i+1; j<l; j++) {
+            // If this[i] is found later in the array
+            if (this[i][0] === this[j][0] && this[i][1] === this[j][1])
+                j = ++i;
+        }
+        a.push(this[i]);
+    }
+    return a;
+};

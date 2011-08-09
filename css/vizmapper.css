@@ -19,30 +19,13 @@ span {
 
 
 
-.graphColor {
+.viewColor {
 	background:rgb(187,187,187);
 }
-.listColor {
+.editColor {
 	background:rgb(187,187,227);
 }
-.rawColor {
-	background:rgb(220,220,220);
-}
-.grey {
-	background:rgba(180,180,180,255);
-}
-.blue {
-	background:rgba(100,160,255,255);
-}
-.green {
-	background:rgba(0,255,0,255);
-}
-.yellow {
-	background:rgba(255,255,0,255);
-}
-.red {
-	background:rgba(200,0,0,255);
-}
+
 .inactive {
 	background:black;
 	color:white;
@@ -179,26 +162,10 @@ span {
 	font-family:monospace;
 	display:none;
 }
-#taggingHelp {
-	z-index:4;
-	position:absolute;
-	font-size:20px;
-	font-family:monospace;
-	display:none;
-}
 
 
-#rawTab {
-	z-index:3;
-	position:absolute;
-	left:240px;
-	width:100px;
-	height:40px;
-	padding:10px;
-	font-size:20px;
-	font-family:monospace;
-}
-#graphTab {
+
+#viewTab {
 	z-index:3;
 	position:absolute;
 	left:0px;
@@ -208,7 +175,7 @@ span {
 	font-size:20px;
 	font-family:monospace;
 }
-#listTab {
+#editTab {
 	z-index:3;
 	position:absolute;
 	left:120px;
@@ -218,96 +185,9 @@ span {
 	font-size:20px;
 	font-family:monospace;
 }
-#signalsTab {
-	z-index:3;
-	position:absolute;
-	top:64px;
-	left:880px;
-	width:120px;
-	height:20px;
-	padding:6px;
-	font-size:20px;
-	font-family:monospace;
-	display:none;
-}
-#mappingsTab {
-	z-index:3;
-	position:absolute;
-	top:64px;
-	left:1000px;
-	width:120px;
-	height:20px;
-	padding:6px;
-	font-size:20px;
-	font-family:monospace;
-	display:none;
-}
-#executeText {
-	z-index:1;
-	color:rgba(0,0,0,0);
-	position:absolute;
-	left:280px;
-	top:11px;
-	height:30px;
-	width:780px;
-	font-size:20px;
-	font-family:monospace;
-	background:white;
-	border:0px;
-	padding:0px;
-	padding-top:8px;
-	padding-left:2px;
-	display:none;
-}
-#executeInput {
-	z-index:2;
-	color:rgba(0,0,0,255);
-	position:absolute;
-	left:280px;
-	top:14px;
-	height:30px;
-	width:780px;
-	font-size:20px;
-	font-family:monospace;
-	background:transparent;
-	border:0px;
-	display:none;
-}
-#executeButton {
-	z-index:3;
-	position:absolute;
-	top:10px;
-	left:1080px;
-	width:100px;
-	height:40px;
-	font-size:20px;
-	font-family:monospace;
-	display:none;
-}
-/*
-.view {
-	width:900px;
-}
-.modify {
-	width:780px;
-}
-*/
-#filterText {
-	z-index:1;
-	color:rgba(0,0,0,0);
-	position:absolute;
-	left:530px;
-	top:11px;
-	height:30px;
-	width:650px;
-	font-size:20px;
-	font-family:monospace;
-	background:white;
-	border:0px;
-	padding:0px;
-	padding-top:8px;
-	padding-left:2px;
-}
+
+
+
 #filterInput {
 	z-index:2;
 	color:rgba(0,0,0,255);
@@ -328,6 +208,24 @@ span {
 	top:22px;
 	font-size:18px;
 }
+#filterInputBackground {
+    z-index:1;
+    color:rgba(0,0,0,0);
+    position:absolute;
+    left:530px;
+    top:11px;
+    height:30px;
+    width:650px;
+    font-size:20px;
+    font-family:monospace;
+    background:white;
+    border:0px;
+    padding:0px;
+    padding-top:8px;
+    padding-left:2px;
+}
+
+
 
 #addMappingForm {
 	background:rgb(187,187,227);
@@ -431,33 +329,6 @@ span {
 
 
 
-#signalsFile {
-	position:absolute;
-	padding:10px;
-	left:0px;
-	top:65px;
-	background:transparent;
-	color:black;
-	display:none;
-}
-#mappingsFile {
-	position:absolute;
-	padding:10px;
-	left:0px;
-	top:65px;
-	background:transparent;
-	color:black;
-	display:none;
-}
-#rawText {
-	position:absolute;
-	padding:10px;
-	left:0px;
-	top:100px;
-	background:transparent;
-	color:black;
-	display:none;
-}
 #globalCanvas{
 	left:0px;
 	top:0px;

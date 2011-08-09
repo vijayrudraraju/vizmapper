@@ -18,17 +18,14 @@
 
 <body>
 	<canvas id="globalCanvas"></canvas>
-	<p id="signalsFile">JSON file: http://arrangatta.appspot.com/data/testerNetwork.json</p>
-	<p id="mappingsFile">JSON file: http://arrangatta.appspot.com/data/testerMapping.json</p>
 	<pre id="rawText"></pre>
 
 	<p id="filterInputLabel">signal filter</p>
 	<input id="filterInput" value=""/>
-	<pre id="filterText"></pre>
+    <pre id="filterInputBackground"></pre>
 
-	<div id="graphTab" class="active">view</div>
-	<div id="listTab" class="inactive">edit</div>
-	<div id="rawTab" class="inactive">raw</div>
+	<div id="viewTab" class="active">view</div>
+	<div id="editTab" class="inactive">edit</div>
 
 	<div id="addMappingForm">
 		<p>connection from</p>
@@ -130,16 +127,5 @@
 		<p>one can group the matches of multiple filters together by sepearating multiple filter expressions with a space (" "). this acts functionally as a logical OR.</p>
 		<p><i>for example, the string "/ear/blob2 /eye /monitor" will filter the set of all signals through each of the 3 expressions and then display the results of each filter together.</i></p>
 	</div>
-	<div id="taggingHelp" class="topicHelp">
-		<p><b>tagging</b></p>
-		<br/><br/>
-	</div>
-
-	<div id="signalsTab" class="active">signals</div>
-	<div id="mappingsTab" class="inactive">mappings</div>
-
-	<!--<input id="executeInput"/>
-	<pre id="executeText"></pre>
-	<button id="executeButton">execute</button>-->
 </body>
 </html>

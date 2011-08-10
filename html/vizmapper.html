@@ -80,26 +80,26 @@
 	</div>
 
 	<div id="viewHelp" class="bigTopicHelp">
-		<p><b>views</b></p>
+		<p><b>modes</b></p>
 		<br/><br/>
-		<p>the interface provides 3 views on the network structure and topology.</p>
+		<p>the interface provides 2 modes: a view mode and edit mode.</p>
 		<br/>
-		<p>the <b>graph</b> view displays signals as black circles.</p>
+        <p>the <b>view</b> mode displays <b>output signals</b> as filled green circles and <b>input signals</b> as filled yellow circles.</p>
 		<br/>
-		<p><b>signals</b> are clustered according to their hierarchical namespace. mousing over a signal displays the signal name. the white circles represent clusters according to the first parent level. the gray circles represent clusters according to the second parent level. if a signal namespace is only 2 (or 1) levels deep then the white (and gray) circles are still displayed for visual consistency.</p>
-		<p><b>connections</b> in the graph view are represented by black lines. mousing over a connection displays the mapping used in the connection. new connections are made by clicking on an output signal followed by clicking on an input signal. a dialog appears allowing the user to specify the mapping to be used in the connection. connections are removed by clicking on a connection.</p>
+        <p><b>clusters</b> of output signals are displayed as unfilled green circles and clusters of input signals are unfilled yellow circles.</p>
+        <br/>
+		<p><b>signals</b> are clustered according to their hierarchical namespace. mousing over a signal highlights the cluster or signal name depending on the current branch of the network hierarchy that is displayed. clicking on a cluster causes the view to descend one level in the hierarchy.</p>
+        <p><b>connections</b> in the graph view are represented by black lines.</p>
 		<br/>
-		<p>the <b>list</b> view displays more detailed signal and mapping metadata in simple list form.</p>
+        <p>the <b>edit</b> mode focuses the display on the signals (not clusters) on the current branch and allows the user to make connections between outputs and inputs by selected an output as the source of a connection by clicking on an output signal. clicking on an input signals selects the input as a destination of a connection. clicking the black <b>update</b> button requests the conneciton to be made.</p>
+        <p>clicking on a connection highlights the connection red and displays the functional transformation operating on the connection. modifying the transformation and clicking <b>update</b> modifies the conneciton. clicking <b>remove</b> breaks the connection between the two signals.</p>
 		<br/>
-		<p>the <b>raw</b> view displays the raw JSON data that is currently being manipulated with the interface.</p>
-		<p>NOTE: until work on the server side code utilizing libmapper is completed this raw data represents a static, dummy network that does not actually get modified. once the server side code is completed the JSON files will dynamically change to reflect configurations changes made using <b>vizmapper</b> and the real-time state of the network.</p>
 	</div>
 
 	<div id="signalHelp" class="topicHelp">
 		<p><b>signals</b></p>
 		<br/><br/>
 		<p>signals represent the available sources and destinations of real-time data present in the network.</p>
-		<p>NOTE: until work on the server side code utilizing libmapper is completed, the "network" is represented by static JSON files that can be viewed by clicking on the <b>"raw"</b> tab.</p>
 		<br/>
 		<p>libmapper uses the <b>OpenSoundControl</b> protocol to represent signals on the network using hierarchical namespaces.</p>
 		<br/>
@@ -113,19 +113,16 @@
 		<br/>
 		<p>a mapping (and thus a connection) is created by first clicking on the output signal that one wants to act as the source of data and then clicking on the input signal that one wants to act as the destination of data after it is transformed by the mapping.</p> 
 	</div>
-	<div id="filteringHelp" class="bigTopicHelp">
+	<div id="filteringHelp" class="topicHelp">
 		<p><b>text filtering</b></p>
 		<br/><br/>
-		<p>a distinguishing feature of <b>vizmapper</b> is the ability to filter the graph view by signal name by typing in the text input box at the top center of the interface.</p>
+		<p>at anytime the signal view can be filtered by signal name by typing in the text input box at the top center of the interface.</p>
 		<br/>
-		<p>a filter expression must always begin with a forward slash ("/"). the string following the slash represents the string that will be used to filter the signals.</p>
-		<p><i>for example, the string "/ear" will keep those signals that have the string "ear" somewhere within their namespace.</i></p>
-		<br/>
-		<p>an expression can be made more nuanced by using additional forward slashes that functionally act as a logical AND.</p>
-		<p><i>for example, the string "/ear/blob2" will keep those signals that have "ear" at some level in their namespace AND "blob2" at another</i> NOTE: currently not working properly!</p>
+		<p>for example, the string "ear" will keep those signals that have the string "ear" somewhere within their namespace.</p>
 		<br/>
 		<p>one can group the matches of multiple filters together by sepearating multiple filter expressions with a space (" "). this acts functionally as a logical OR.</p>
-		<p><i>for example, the string "/ear/blob2 /eye /monitor" will filter the set of all signals through each of the 3 expressions and then display the results of each filter together.</i></p>
+        <br/>
+		<p>for example, the string "/ear/blob2 /eye /monitor" will filter the set of all signals through each of the 3 expressions and then display the results of each filter together.</p>
 	</div>
 </body>
 </html>

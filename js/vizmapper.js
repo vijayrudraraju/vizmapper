@@ -1,5 +1,5 @@
 //TODO
-// when there are edges that are supposed to appear in view, but not edit, crash involving layoutX
+// stop incessant looping from burning cpu
 
 //libmapper info
 
@@ -63,38 +63,48 @@ $(document).ready(function() {
 		$('span').hover(function() {
 			$(this).toggleClass('normalHelp',false);
 			$(this).toggleClass('hoverHelp',true);
+            globalP.redraw();
 		}, function() {
 			$(this).toggleClass('normalHelp',true);
 			$(this).toggleClass('hoverHelp',false);
+            globalP.redraw();
 		});
         $('#viewHelpTrigger').click(function() {
             deactivateHelpMode();
             $('#viewHelp').toggle(true);
+            globalP.redraw();
         });
         $('#signalHelpTrigger').click(function() {
             deactivateHelpMode();
             $('#signalHelp').toggle(true);
+            globalP.redraw();
         });
         $('#mappingHelpTrigger').click(function() {
             deactivateHelpMode();
             $('#mappingHelp').toggle(true);
+            globalP.redraw();
         });
         $('#filteringHelpTrigger').click(function() {
             deactivateHelpMode();
             $('#filteringHelp').toggle(true);
+            globalP.redraw();
         });
 
         $('#viewHelp').click(function() {
             $('#viewHelp').toggle(false);
+            globalP.redraw();
         });
         $('#signalHelp').click(function() {
             $('#signalHelp').toggle(false);
+            globalP.redraw();
         });
         $('#mappingHelp').click(function() {
             $('#mappingHelp').toggle(false);
+            globalP.redraw();
         });
         $('#filteringHelp').click(function() {
             $('#filteringHelp').toggle(false);
+            globalP.redraw();
         });
 
 		$('#aboutSwitch').click(function() {
@@ -104,6 +114,7 @@ $(document).ready(function() {
 			} else {
 				deactivateAboutMode();
 			}
+            globalP.redraw();
 		});
 		$('#helpSwitch').click(function() {
 			isHelping = !isHelping;
@@ -112,6 +123,7 @@ $(document).ready(function() {
 			} else {
 				deactivateHelpMode();
 			}
+            globalP.redraw();
 		});
 
         $('#updateConnection').click(function() {
@@ -123,31 +135,41 @@ $(document).ready(function() {
                         doModifyConnection();
                     }
                 }
+                globalP.redraw();
         });
         $('#removeConnection').click(function() {
                 if (selectedSource != "none" &&
                     selectedDestination != "none") {
                     doDisconnect();
                 }
+                globalP.redraw();
         });
 
 		$('#viewTab').click(function() {
 			activateViewMode();
             updateGraph = true;
+            globalP.redraw();
+            updateGraph = true;
+            globalP.redraw();
 		});
 		$('#editTab').click(function() {
 			activateEditMode();
             updateGraph = true;
+            globalP.redraw();
+            updateGraph = true;
+            globalP.redraw();
 		});
 
 		$('#filterInput').keyup(function(event) {
 			event.preventDefault();
 			//updateActiveFilter();
             updateGraph = true;
+            globalP.redraw();
 		});
 
 		main();
         activateViewMode();
+        globalP.redraw();
 });
 
 // register callbacks for webmapper events
@@ -158,16 +180,19 @@ function main()
             updateGraph = true;
             devices.add(args[d].name, args[d]);
         }
+        globalP.redraw();
     });
     command.register("new_device", function(cmd, args) {
         updateGraph = true;
         devices.add(args.name, args);
         resetToRootLevel();
+        globalP.redraw();
     });
     command.register("del_device", function(cmd, args) {
         updateGraph = true;
         devices.remove(args.name);
         resetToRootLevel();
+        globalP.redraw();
     });
 
     command.register("all_signals", function(cmd, args) {
@@ -175,16 +200,19 @@ function main()
             updateGraph = true;
             signals.add(args[d].device_name+args[d].name, args[d]);
         }
+        globalP.redraw();
     });
     command.register("new_signal", function(cmd, args) {
             updateGraph = true;
             signals.add(args.device_name+args.name, args);
             resetToRootLevel();
+            globalP.redraw();
     });
     command.register("del_signal", function(cmd, args) {
             updateGraph = true;
             signals.remove(args.device_name+args.name);
             resetToRootLevel();
+            globalP.redraw();
     });
 
     command.register("all_links", function(cmd, args) {
@@ -192,14 +220,17 @@ function main()
             updateGraph = true;
             links.add(args[l].src_name+'>'+args[l].dest_name, args[l]);
             }
+            globalP.redraw();
     });
     command.register("new_link", function(cmd, args) {
             updateGraph = true;
             links.add(args.src_name+'>'+args.dest_name, args);
+            globalP.redraw();
     });
     command.register("del_link", function(cmd, args) {
             updateGraph = true;
             links.remove(args.src_name+'>'+args.dest_name);
+            globalP.redraw();
     });
 
     command.register("all_connections", function(cmd, args) {
@@ -207,18 +238,22 @@ function main()
             updateGraph = true;
             connections.add(args[d].src_name+'>'+args[d].dest_name, args[d]);
             }
+            globalP.redraw();
     });
     command.register("new_connection", function(cmd, args) {
         updateGraph = true;
         connections.add(args.src_name+'>'+args.dest_name, args);
+        globalP.redraw();
     });
     command.register("mod_connection", function(cmd, args) {
         updateGraph = true;
         connections.add(args.src_name+'>'+args.dest_name, args);
+        globalP.redraw();
     });
     command.register("del_connection", function(cmd, args) {
         updateGraph = true;
         connections.remove(args.src_name+'>'+args.dest_name);
+        globalP.redraw();
     });
 
 	command.start();
@@ -278,6 +313,7 @@ function globalP(p) {
 	p.mouseMoved = function() {
 		mouseX = p.mouseX;
 		mouseY = p.mouseY;
+        p.redraw();
 	};
 
 	p.mouseClicked = function() {
@@ -288,6 +324,7 @@ function globalP(p) {
             detectNodeClick(true);
             detectEdgeClick();
         }
+        p.redraw();
 	};
 
 	p.setup = function() {
@@ -316,8 +353,10 @@ function globalP(p) {
 
             if (updateGraph == 2) {
                 updateGraph = false;
+                p.redraw();
             } else {
                 updateGraph = 2;
+                p.redraw();
             }
         }
 
@@ -352,8 +391,7 @@ function globalP(p) {
 
         }
 
-        drawCounter++;
-        drawCounter = drawCounter % 240;
+        globalP.noLoop();
 	};
 }
 

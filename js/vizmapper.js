@@ -365,7 +365,7 @@ function globalP(p) {
             $('html').toggleClass('editColor',false);
             $('html').toggleClass('rawColor',false);
 
-            p.background(207);
+            p.background(230);
             drawBackground();
             if (mouseX < 200 || mouseX > screenWidth-200) {
                 updateListGlyphMouseState();
@@ -382,7 +382,7 @@ function globalP(p) {
             $('html').toggleClass('editColor',true);
             $('html').toggleClass('rawColor',false);
 
-            p.background(207,207,207);
+            p.background(230);
             drawBackground();
             updateNodeMouseState();
             updateEdgeMouseState();
@@ -934,11 +934,11 @@ function drawBackground() {
         centerY2 = 45+(760/2);
 
         globalP.noStroke();
-        globalP.fill(187,187,187);
+        globalP.fill(215);
         globalP.rect(10,150,180,screenHeight+150);
 
         globalP.noStroke();
-        globalP.fill(187,187,187);
+        globalP.fill(215);
         globalP.rect(screenWidth-190,150,180,screenHeight+150);
     } else if ($('#editTab').hasClass('active')) {
         centerX1 = 550+190;
